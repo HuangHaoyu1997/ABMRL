@@ -1,13 +1,13 @@
 import numpy as np
 
 class Grid:
-    def __init__(self) -> None:
+    def __init__(self, map_size=[500,500]) -> None:
         self.inf_num = 20 # 基础设施数量
         self.edu_num = 30 # 学校数量
         self.init_value = 1000 # 初始地价在[0,1000]随机分布
         self.env_num = [20,30] # 自然资源[河流，山脉]的数量
         
-        self.map_size = [500,500]
+        self.map_size = map_size
         self.init_map()
     
     def init_map(self):
@@ -25,9 +25,11 @@ class Grid:
         # 交通地图
         self.tra_map = self.init_tra_map()
         
-        self.env_map = 
-        self.val_map = None # 地价
-        self.use_map = None # 土地利用
+        # 环境
+        self.env_map = None
+
+        # 土地利用
+        self.use_map = None # 土地利
         
     def init_inf_map(self):
         # 初始化基础设施地图
