@@ -5,7 +5,7 @@ class Grid:
         self.inf_num = 20 # 基础设施数量
         self.edu_num = 30 # 学校数量
         self.init_value = 1000 # 初始地价在[0,1000]随机分布
-        self.env_num = [20,30] # 自然资源[河流，山脉]的数量
+        self.env_num = 5 # 自然资源[河流，山脉]的数量
         
         self.map_size = map_size
         self.init_map()
@@ -26,10 +26,10 @@ class Grid:
         self.tra_map = self.init_tra_map()
         
         # 环境
-        self.env_map = None
+        self.env_map, self.env_xy = self.init_env_map()
 
         # 土地利用
-        self.use_map = None # 土地利
+        self.use_map = self.init_use_map()
         
     def init_inf_map(self):
         # 初始化基础设施地图
@@ -71,10 +71,23 @@ class Grid:
 
     def init_env_map(self):
         # 初始化自然资源地图
-        edu_map = np.zeros(self.map_size)
-        xy = self.inf_xy + np.random.randint(np.ones((self.edu_num,2))*[10,10])-5
-        xy[xy<0] = 0
-        for xxyy in xy:
-            x,y = xxyy
-            edu_map[x,y] = 1
-        return edu_map, xy
+        env_map = np.zeros(self.map_size)
+        env_xy = []
+        for _ in range(self.env_num):
+            xy = np.random.randint(self.map_size)
+            while xy in self.inf_xy or xy in self.edu_xy:
+                xy = np.random.randint(self.map_size)
+            env_xy.append(xy)
+            x,y = xy
+            env_map[x,y] = 1
+        env_xy = np.array(env_xy)
+        return env_map, env_xy
+    
+    def init_use_map(self):
+        # 1:自然资源
+        # 2:智能体
+        use_map = np.zeros(self.map_size)
+        for xy in self.env_xy:
+            x,y = xy
+            use_map[x,y] = 1
+        return use_map
