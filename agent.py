@@ -13,7 +13,7 @@ class Agent:
         self.out_pressure = None # 外部压力
         self.inner_pressure = None # 内部压力
 
-    def cal_out_pressure(self):
+    def cal_in_pressure(self, value_map, neighbor):
         '''
         计算内部社会经济压力
         S_h^t = c1*|I_h^t - V_h^t| + c2*|I_h^t - P_h^t|
@@ -23,10 +23,12 @@ class Agent:
         P是邻居平均经济状况
         c1、c2是系数
         '''
-
+        x,y = self.coord
+        price = value_map[x,y] # 所占土地地价
+        
         pass
 
-    def cal_inner_pressure(self):
+    def cal_out_pressure(self):
         '''
         计算外部居住环境吸引力
         G_h^t = w_env*E_env + w_edu*E_edu + w_tra*E_tra + w_pri*E_pri + w_con*E_con

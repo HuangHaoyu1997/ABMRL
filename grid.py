@@ -89,7 +89,7 @@ class Grid:
         use_map = np.zeros(self.map_size)
         for xy in self.env_xy:
             x,y = xy
-            use_map[x,y] = 1
+            use_map[x,y] = -1
         return use_map
     
     

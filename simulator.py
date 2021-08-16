@@ -23,6 +23,8 @@ class env:
 
         self.grid = Grid()
         self.agent_pool = []
+        self.pop_size = len(self.agent_pool)
+        self.gen_agent(N=500)
 
     def step(self):
         # 单步执行函数
@@ -32,8 +34,10 @@ class env:
 
     def change_income(self):
         # 更新智能体的收入
+        for a in self.agent_pool:
+            income = a.update_income(self.r, self.max_income)
+
         
-        pass
 
     def change_value(self):
         '''
@@ -59,7 +63,7 @@ class env:
         # 生成新智能体
         # N:新增总人口
         number = N * self.class_ratio # 将新增总人口按收入阶层比例划分
-        count = 0
+        
         for i in range(5): # 为每个阶层产生新人口
             for _ in range(number[i]):
                 xy = np.random.randint(self.map_size)
@@ -70,8 +74,8 @@ class env:
                 self.grid.use_map[x,y] = 2
                 l,h = self.income[0]
                 income = np.random.randint(low=l, high=h)
-                self.agent_pool.append(Agent(count,xy,income,self.WT))
-                count += 1
+                self.agent_pool.append(Agent(self.pop_size,xy,income,self.WT))
+                self.pop_size += 1
 
     def render(self):
         
