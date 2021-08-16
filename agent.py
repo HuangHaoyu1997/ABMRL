@@ -47,7 +47,7 @@ class Agent:
         AW_h^t < WT，不迁居
         U_b^t是Agent视域内最佳居住点的区位效应
         '''
-        # 
+        
 
         pass
 

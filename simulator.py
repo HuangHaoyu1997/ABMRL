@@ -11,6 +11,8 @@ class env:
         self.max_pop = 6000 # 人口上限
         self.max_income = 5000 # 最高收入
         self.r = 0.005 # 收入增速
+        self.R = 0.005 # 地价增速
+        self.D = 0.1 # 地价折旧率
         self.class_ratio = np.array([0.1,0.2,0.4,0.2,0.1]) # 低,中低,中,中高,高
         self.income = np.array([[100,280],   # 低
                                 [280,460],   # 中低
@@ -34,7 +36,22 @@ class env:
         pass
 
     def change_value(self):
-        # 改变土地价值
+        '''
+        改变土地价值
+        土地价值与上一时刻的地价、Agent所持有的财富、周边地价有关
+        若土地被Agent占据：
+        V_{ij}^{t+1} = a*(1+R)*V_{ij}^t 
+                        + (1-a)*[(I_h^t+\sum_{m \in \Omega(\hat{ij})} V_m^t)/9]
+        a是权重
+        R是地价增速
+        \sum_{m \in \Omega(\hat{ij})} V_m^t是智能体周围8个地块的地价之和
+
+        若土地未被Agent占据，则价值随时间折旧：
+        V_{ij}^{t+1} = a*(1-D)*V_{ij}^t 
+                        + (1-a)*[(\sum_{m \in \Omega(ij)} V_m^t)/9]
+        D是折旧率
+        '''
+        
         
         pass
 

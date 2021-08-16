@@ -91,3 +91,5 @@ class Grid:
             x,y = xy
             use_map[x,y] = 1
         return use_map
+    
+    
