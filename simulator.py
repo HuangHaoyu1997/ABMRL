@@ -53,9 +53,10 @@ class env:
         self.grid.use_map
         pass
 
-    def neighbor(self,x,y):
+    def neighbor(self,ID):
         # 计算智能体的邻居，若无，则返回None
-        if x-1>=
+        x,y = self.agent_pool[ID].coord
+        if 
         use_map[x,y]
 
     def cal_out_pressure(self):
