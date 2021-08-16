@@ -38,7 +38,50 @@ class env:
         for a in self.agent_pool:
             income = a.update_income(self.r, self.max_income)
 
+    def cal_in_pressure(self, ID):
+        '''
+        计算内部社会经济压力
+        S_h^t = c1*|I_h^t - V_h^t| + c2*|I_h^t - P_h^t|
+        S是社会经济压力
+        I是个人收入
+        V是所占据土地的价值
+        P是邻居平均经济状况
+        c1、c2是系数
+        '''
+        x,y = self.agent_pool[ID].coord
+        price = self.grid.val_map[x,y] # 所占土地地价
+        self.grid.use_map
+        pass
+
+    def neighbor(self,x,y):
+        # 计算智能体的邻居，若无，则返回None
+        if x-1>=
+        use_map[x,y]
+
+    def cal_out_pressure(self):
+        '''
+        计算外部居住环境吸引力
+        G_h^t = w_env*E_env + w_edu*E_edu + w_tra*E_tra + w_pri*E_pri + w_con*E_con
         
+        '''
+        pass
+
+    def move(self):
+        '''
+        判断迁居阈值，选择迁居地
+
+        计算区位效应
+        U_t^h = w_g * G_h^t + w_s * (1 - S_h^t) + e_h^t
+        e_h^t是随机变量
+        计算迁居意愿
+        AW_h^t = U_b^t - U_h^t
+        AW_h^t >= WT，迁居
+        AW_h^t < WT，不迁居
+        U_b^t是Agent视域内最佳居住点的区位效应
+        '''
+        
+
+        pass
 
     def change_value(self):
         '''
@@ -67,7 +110,7 @@ class env:
         
         for i in range(5): # 为每个阶层产生新人口
             for _ in range(number[i]):
-                xy = np.random.randint(self.map_size)
+                xy = np.random.randint(self.map_size) # 随机生成位置
                 x,y = xy
                 while self.grid.use_map[x,y] != 0: # 如果该位置被占据或不能放置，则重新生成
                     xy = np.random.randint(self.map_size)
@@ -75,7 +118,7 @@ class env:
                 ID = self.pop_size + 1000 # 用ID为智能体建立索引
                 self.grid.use_map[x,y] = ID # 在use_map中更新智能体的ID
                 l,h = self.income[i] # 各个阶层的初始收入上限
-                income = np.random.randint(low=l, high=h)
+                income = np.random.randint(low=l, high=h) # 随机收入
                 self.agent_pool[ID] = Agent(ID,xy,income,self.WT)
                 self.pop_size += 1
 
