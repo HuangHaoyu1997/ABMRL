@@ -14,6 +14,7 @@ class env:
         self.R = 0.005 # 地价增速
         self.D = 0.1 # 地价折旧率
         self.class_ratio = np.array([0.1,0.2,0.4,0.2,0.1]) # 低,中低,中,中高,高
+        # 各个阶层的初始收入上下限，需要实时更新
         self.income = np.array([[100,280],   # 低
                                 [280,460],   # 中低
                                 [460,640],   # 中
@@ -22,7 +23,7 @@ class env:
         self.WT = 0.15 # 迁居阈值
 
         self.grid = Grid()
-        self.agent_pool = []
+        self.agent_pool = {}
         self.pop_size = len(self.agent_pool)
         self.gen_agent(N=500)
 
@@ -68,13 +69,14 @@ class env:
             for _ in range(number[i]):
                 xy = np.random.randint(self.map_size)
                 x,y = xy
-                while self.grid.use_map[x,y] != 0:
+                while self.grid.use_map[x,y] != 0: # 如果该位置被占据或不能放置，则重新生成
                     xy = np.random.randint(self.map_size)
                     x,y = xy
-                self.grid.use_map[x,y] = 2
-                l,h = self.income[0]
+                ID = self.pop_size + 1000 # 用ID为智能体建立索引
+                self.grid.use_map[x,y] = ID # 在use_map中更新智能体的ID
+                l,h = self.income[i] # 各个阶层的初始收入上限
                 income = np.random.randint(low=l, high=h)
-                self.agent_pool.append(Agent(self.pop_size,xy,income,self.WT))
+                self.agent_pool[ID] = Agent(ID,xy,income,self.WT)
                 self.pop_size += 1
 
     def render(self):
