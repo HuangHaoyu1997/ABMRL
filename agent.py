@@ -7,9 +7,9 @@ class Agent:
         self.coord = coord
         self.income = income # 初始income[100,1000]
         self.WT = WT # 迁居阈值
-        self.clas, self.RF, self.weight = self.class_RF(max_income=1000) # 确定阶层,视域和权重
+        self.clas, self.RF, self.weight = self.def_class(max_income=1000) # 确定阶层,视域和权重
         
-
+859
     def update_income(self, r , max_income):
         r1, r2 = np.random.randint([20,20])-10
         tmp = self.income + r * self.income * (1 - self.income/max_income)

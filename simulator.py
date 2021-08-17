@@ -302,10 +302,21 @@ class env:
         '''
         计算外部居住环境吸引力
         G_h^t = w_env*E_env + w_edu*E_edu + w_tra*E_tra + w_pri*E_pri + w_con*E_con
+        Agent权重的排序: 交通，地价，公共设施，环境，教育
         '''
-        x,y = self.agent_pool[ID].coord
+        xy = self.agent_pool[ID].coord
         weight = self.agent_pool[ID].weight
-        E_env = self.grid.env_xy
+        E_env = np.min(np.sqrt(np.sum((self.grid.env_xy-xy)**2,1)))
+        E_env = np.exp(1-0.001*E_env) # 指数距离衰减函数
+
+        E_edu = np.min(np.sqrt(np.sum((self.grid.edu_xy-xy)**2,1)))
+        E_edu = np.exp(1-0.001*E_edu) # 指数距离衰减函数
+        
+        E_inf = np.min(np.sqrt(np.sum((self.grid.inf_xy-xy)**2,1)))
+        E_inf = np.exp(1-0.001*E_inf) # 指数距离衰减函数
+        
+        
+
 
 
     def move(self):

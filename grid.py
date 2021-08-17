@@ -3,7 +3,7 @@ import numpy as np
 class Grid:
     def __init__(self, map_size=[500,500]) -> None:
         self.inf_num = 20 # 基础设施数量
-        self.edu_num = 30 # 学校数量
+        self.edu_num = 20 # 学校数量
         self.init_value = 1000 # 初始地价在[0,1000]随机分布
         self.env_num = 5 # 自然资源[河流，山脉]的数量
         
