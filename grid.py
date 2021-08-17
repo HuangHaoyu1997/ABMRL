@@ -56,6 +56,7 @@ class Grid:
     def init_tra_map(self):
         # 基础设施周围具有较好的交通等级
         tra_map = np.ones(self.map_size)
+        '''
         for xy in self.inf_xy:
             x,y = xy
             tra_map[x,y] = 3   # 市中心拥有最高交通等级
@@ -67,6 +68,8 @@ class Grid:
             tra_map[x+1,y+1] = 2
             tra_map[x-1,y+1] = 2
             tra_map[x+1,y-1] = 2
+        '''
+        xy = 
         return tra_map
 
     def init_env_map(self):
