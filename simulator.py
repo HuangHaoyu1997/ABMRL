@@ -298,12 +298,14 @@ class env:
 
             return tmp
 
-    def cal_out_pressure(self):
+    def cal_out_pressure(self, ID):
         '''
         计算外部居住环境吸引力
         G_h^t = w_env*E_env + w_edu*E_edu + w_tra*E_tra + w_pri*E_pri + w_con*E_con
         '''
-        
+        x,y = self.agent_pool[ID].coord
+        weight = self.agent_pool[ID].weight
+        E_env = self.grid.env_xy
 
 
     def move(self):
