@@ -13,13 +13,15 @@ class env:
         self.r = 0.005 # 收入增速
         self.R = 0.005 # 地价增速
         self.D = 0.1 # 地价折旧率
+        self.c1 = 1.0 # 经济压力权重
+        self.c2 = 1.0 # 社会压力权重
         self.class_ratio = np.array([0.1,0.2,0.4,0.2,0.1]) # 低,中低,中,中高,高
         # 各个阶层的初始收入上下限，需要实时更新
-        self.income = np.array([[100,280],   # 低
-                                [280,460],   # 中低
-                                [460,640],   # 中
-                                [640,820],   # 中高
-                                [820,1000]]) # 高
+        self.income = np.array([[100,175],   # 低
+                                [175,350],   # 中低
+                                [350,500],   # 中
+                                [500,750],   # 中高
+                                [750,1000]]) # 高
         self.WT = 0.15 # 迁居阈值
 
         self.grid = Grid()
@@ -49,9 +51,12 @@ class env:
         c1、c2是系数
         '''
         x,y = self.agent_pool[ID].coord
+        income = self.agent_pool[ID].income
         price = self.grid.val_map[x,y] # 所占土地地价
-        self.grid.use_map
-        pass
+        IorV = self.neighbor(ID) # 计算ID智能体的周围的价值
+        P = np.mean(IorV)
+        S = self.c1 * np.abs(income-price) + self.c2 * np.abs(income-P)
+        return S
 
     def is_agent(self,xy):
         # 判断当前地块是空地还是被智能体占据
@@ -248,19 +253,58 @@ class env:
             elif not self.is_agent(x+1,y-1): # 空地
                 tmp.append(self.grid.val_map[x+1,y-1])
             return tmp
-
+        # 考虑最一般的情况
         else:
-            
+            tmp = []
+            if self.is_agent(x-1,y): # 被智能体占据
+                tmp.append(self.agent_pool[self.is_agent(x-1,y)].income)
+            elif not self.is_agent(x-1,y): # 空地
+                tmp.append(self.grid.val_map[x-1,y])
 
-        use_map[x,y]
+            if self.is_agent(x+1,y): # 被智能体占据
+                tmp.append(self.agent_pool[self.is_agent(x+1,y)].income)
+            elif not self.is_agent(x+1,y): # 空地
+                tmp.append(self.grid.val_map[x+1,y])
+            
+            if self.is_agent(x-1,y-1): # 被智能体占据
+                tmp.append(self.agent_pool[self.is_agent(x-1,y-1)].income)
+            elif not self.is_agent(x-1,y-1): # 空地
+                tmp.append(self.grid.val_map[x-1,y-1])
+
+            if self.is_agent(x,y-1): # 被智能体占据
+                tmp.append(self.agent_pool[self.is_agent(x,y-1)].income)
+            elif not self.is_agent(x,y-1): # 空地
+                tmp.append(self.grid.val_map[x,y-1])
+            
+            if self.is_agent(x+1,y-1): # 被智能体占据
+                tmp.append(self.agent_pool[self.is_agent(x+1,y-1)].income)
+            elif not self.is_agent(x+1,y-1): # 空地
+                tmp.append(self.grid.val_map[x+1,y-1])
+            
+            if self.is_agent(x+1,y+1): # 被智能体占据
+                tmp.append(self.agent_pool[self.is_agent(x+1,y+1)].income)
+            elif not self.is_agent(x+1,y+1): # 空地
+                tmp.append(self.grid.val_map[x+1,y+1])
+
+            if self.is_agent(x-1,y+1): # 被智能体占据
+                tmp.append(self.agent_pool[self.is_agent(x-1,y+1)].income)
+            elif not self.is_agent(x-1,y+1): # 空地
+                tmp.append(self.grid.val_map[x-1,y+1])
+
+            if self.is_agent(x,y+1): # 被智能体占据
+                tmp.append(self.agent_pool[self.is_agent(x,y+1)].income)
+            elif not self.is_agent(x,y+1): # 空地
+                tmp.append(self.grid.val_map[x,y+1])
+
+            return tmp
 
     def cal_out_pressure(self):
         '''
         计算外部居住环境吸引力
         G_h^t = w_env*E_env + w_edu*E_edu + w_tra*E_tra + w_pri*E_pri + w_con*E_con
-        
         '''
-        pass
+        
+
 
     def move(self):
         '''
