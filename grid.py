@@ -23,7 +23,7 @@ class Grid:
         self.val_map = self.init_val_map()
 
         # 交通地图
-        self.tra_map = self.init_tra_map()
+        self.tra_map, self.tra_xy = self.init_tra_map()
         
         # 环境
         self.env_map, self.env_xy = self.init_env_map()
@@ -55,7 +55,7 @@ class Grid:
     
     def init_tra_map(self):
         # 基础设施周围具有较好的交通等级
-        tra_map = np.ones(self.map_size)
+        tra_map = np.zeros(self.map_size)
         '''
         for xy in self.inf_xy:
             x,y = xy
@@ -69,8 +69,12 @@ class Grid:
             tra_map[x-1,y+1] = 2
             tra_map[x+1,y-1] = 2
         '''
-        xy = 
-        return tra_map
+        xy = np.zeros((self.map_size[0],2))
+        for x in range(self.map_size[0]):
+            y = np.sin(0.1*x)
+            xy[x,0] = x, xy[x,1] = y
+            tra_map[x,y] = 1
+        return tra_map, xy
 
     def init_env_map(self):
         # 初始化自然资源地图

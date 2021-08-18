@@ -1,20 +1,24 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.core.defchararray import count
+from numpy.testing._private.utils import rand
 from agent import *
 from grid import *
 
 class env:
     def __init__(self) -> None:
-        self.map_size = [500,500]
+        self.map_size = [200,200]
         self.init_pop = 500 # 初始人口
         self.max_pop = 6000 # 人口上限
         self.max_income = 5000 # 最高收入
         self.r = 0.005 # 收入增速
         self.R = 0.005 # 地价增速
         self.D = 0.1 # 地价折旧率
-        self.c1 = 1.0 # 经济压力权重
-        self.c2 = 1.0 # 社会压力权重
+        self.c1 = 1.0 # 内部经济压力权重
+        self.c2 = 1.0 # 内部社会压力权重
+        self.ws = 1.0 # 外部压力权重
+        self.wg = 1.0 # 内部压力权重
+        self.a = 0.5 # 更新地价的权重
         self.class_ratio = np.array([0.1,0.2,0.4,0.2,0.1]) # 低,中低,中,中高,高
         # 各个阶层的初始收入上下限，需要实时更新
         self.income = np.array([[100,175],   # 低
@@ -59,7 +63,11 @@ class env:
         return S
 
     def is_agent(self,xy):
-        # 判断当前地块是空地还是被智能体占据
+        '''
+        判断当前地块是空地还是被智能体占据
+        ID > 999是ID号
+        ID = 0是空地
+        '''
         x,y = xy
         ID = self.grid.use_map[x,y]
         if ID > 999:
@@ -297,6 +305,83 @@ class env:
                 tmp.append(self.grid.val_map[x,y+1])
 
             return tmp
+    def neighbor_value(self,xy):
+        '''
+        计算周围土地的价值
+        '''
+        x,y = xy
+        x_max, y_max = self.map_size
+        # 考虑地块处于地图上的四个角
+        if x == 0 and y == y_max-1:
+            tmp = []
+            tmp.append(self.grid.val_map[x+1,y])
+            tmp.append(self.grid.val_map[x+1,y-1])
+            tmp.append(self.grid.val_map[x,y-1])
+            return tmp
+        elif x == x_max-1 and y == 0:
+            tmp = []
+            tmp.append(self.grid.val_map[x-1,y])
+            tmp.append(self.grid.val_map[x-1,y+1])
+            tmp.append(self.grid.val_map[x,y+1])
+            return tmp
+        elif x == x_max-1 and y == y_max-1:
+            tmp = []
+            tmp.append(self.grid.val_map[x-1,y])
+            tmp.append(self.grid.val_map[x-1,y-1])
+            tmp.append(self.grid.val_map[x,y-1])
+            return tmp
+        elif x == 0 and y == 0:
+            tmp = []
+            tmp.append(self.grid.val_map[x+1,y])
+            tmp.append(self.grid.val_map[x+1,y+1])
+            tmp.append(self.grid.val_map[x,y+1])
+            return tmp
+        
+        # 考虑智能体处于地图上的四条边，不包含四角
+        elif x == 0 and (y>0 and y<y_max-1):
+            tmp = []
+            tmp.append(self.grid.val_map[x+1,y])
+            tmp.append(self.grid.val_map[x+1,y+1])
+            tmp.append(self.grid.val_map[x+1,y-1])
+            tmp.append(self.grid.val_map[x,y+1])
+            tmp.append(self.grid.val_map[x,y-1])
+            return tmp
+        elif x == x_max-1 and (y>0 and y<y_max-1):
+            tmp = []
+            tmp.append(self.grid.val_map[x-1,y])
+            tmp.append(self.grid.val_map[x-1,y+1])
+            tmp.append(self.grid.val_map[x-1,y-1])
+            tmp.append(self.grid.val_map[x,y+1])
+            tmp.append(self.grid.val_map[x,y-1])
+            return tmp
+        elif (x>0 and x<x_max-1) and y == 0:
+            tmp = []
+            tmp.append(self.grid.val_map[x-1,y])
+            tmp.append(self.grid.val_map[x+1,y])
+            tmp.append(self.grid.val_map[x-1,y+1])
+            tmp.append(self.grid.val_map[x,y+1])
+            tmp.append(self.grid.val_map[x+1,y+1])
+            return tmp
+        elif (x>0 and x<x_max-1) and y == y_max-1:
+            tmp = []
+            tmp.append(self.grid.val_map[x-1,y])
+            tmp.append(self.grid.val_map[x+1,y])
+            tmp.append(self.grid.val_map[x-1,y-1])
+            tmp.append(self.grid.val_map[x,y-1])
+            tmp.append(self.grid.val_map[x+1,y-1])
+            return tmp
+        # 考虑最一般的情况
+        else:
+            tmp = []
+            tmp.append(self.grid.val_map[x-1,y])
+            tmp.append(self.grid.val_map[x+1,y])
+            tmp.append(self.grid.val_map[x-1,y-1])
+            tmp.append(self.grid.val_map[x,y-1])
+            tmp.append(self.grid.val_map[x+1,y-1])
+            tmp.append(self.grid.val_map[x+1,y+1])
+            tmp.append(self.grid.val_map[x-1,y+1])
+            tmp.append(self.grid.val_map[x,y+1])
+            return tmp
 
     def cal_out_pressure(self, ID):
         '''
@@ -315,17 +400,27 @@ class env:
         E_inf = np.min(np.sqrt(np.sum((self.grid.inf_xy-xy)**2,1)))
         E_inf = np.exp(1-0.001*E_inf) # 指数距离衰减函数
         
+        E_tra = np.min(np.sqrt(np.sum((self.grid.tra_xy-xy)**2,1)))
+        E_tra = np.exp(1-0.001*E_tra) # 指数距离衰减函数
         
+        return weight * np.array([E_tra,0,E_inf,E_env,E_edu])
 
-
+    def location_effect(self,ID):
+        '''
+        计算区位效应
+        U_t^h = w_g * G_h^t + w_s * (1 - S_h^t) + e_h^t
+        e_h^t是随机变量
+        
+        '''
+        G = self.cal_out_pressure(ID)
+        S = self.cal_in_pressure(ID)
+        LE = self.wg*G + self.ws*(1-S) + 0.1*np.random.rand()
+        return LE 
 
     def move(self):
         '''
         判断迁居阈值，选择迁居地
 
-        计算区位效应
-        U_t^h = w_g * G_h^t + w_s * (1 - S_h^t) + e_h^t
-        e_h^t是随机变量
         计算迁居意愿
         AW_h^t = U_b^t - U_h^t
         AW_h^t >= WT，迁居
@@ -352,7 +447,20 @@ class env:
                         + (1-a)*[(\sum_{m \in \Omega(ij)} V_m^t)/9]
         D是折旧率
         '''
-        
+        for x in range(self.map_size[0]):
+            for y in range(self.map_size[1]):
+                ID = self.is_agent(np.array([x,y]))
+                if ID: # 被智能体占据
+                    V = self.grid.val_map[x,y] # 当前地价
+                    income = self.agent_pool[ID].income # 当前收入
+                    V_n = self.neighbor_value([x,y])
+                    V_n.append(income)
+                    V_n = np.mean(V_n)
+                    self.grid.val_map[x,y] = self.a*(1+self.R)*V + (1-self.a)*V_n
+                elif not ID: # 空地
+                    
+
+
         
         pass
 
