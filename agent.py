@@ -9,7 +9,6 @@ class Agent:
         self.WT = WT # 迁居阈值
         self.clas, self.RF, self.weight = self.def_class(max_income=1000) # 确定阶层,视域和权重
         
-859
     def update_income(self, r , max_income):
         r1, r2 = np.random.randint([20,20])-10
         tmp = self.income + r * self.income * (1 - self.income/max_income)
@@ -38,6 +37,4 @@ class Agent:
             return 'MediumHigh', 5, np.array([0.05,0.05,0.4,0.4,0.1])
         elif IR>=0.75 and IR<=1:
             return 'High', 6, np.array([0.05,0,0.45,0.45,0.05])
-    
-    
     

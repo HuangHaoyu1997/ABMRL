@@ -31,6 +31,7 @@ class env:
         self.grid = Grid()
         self.agent_pool = {}
         self.pop_size = len(self.agent_pool)
+        
         self.gen_agent(N=500)
 
     def step(self):
@@ -41,10 +42,17 @@ class env:
 
     def change_income(self):
         # 更新智能体的收入
+        self.income_list = []
         for a in self.agent_pool:
             income = a.update_income(self.r, self.max_income)
+            self.income_list.append(income)
+        max_income = np.max(self.income_list)
+        # 更新智能体的阶层、视域和权重
+        for a in self.agent_pool:
+            a.def_class(max_income)
 
-    def cal_in_pressure(self, ID):
+
+    def cal_in_pressure(self, ID, xy):
         '''
         计算内部社会经济压力
         S_h^t = c1*|I_h^t - V_h^t| + c2*|I_h^t - P_h^t|
@@ -54,10 +62,10 @@ class env:
         P是邻居平均经济状况
         c1、c2是系数
         '''
-        x,y = self.agent_pool[ID].coord
+        x,y = xy
         income = self.agent_pool[ID].income
         price = self.grid.val_map[x,y] # 所占土地地价
-        IorV = self.neighbor(ID) # 计算ID智能体的周围的价值
+        IorV = self.neighbor(xy) # 计算ID智能体的周围的价值
         P = np.mean(IorV)
         S = self.c1 * np.abs(income-price) + self.c2 * np.abs(income-P)
         return S
@@ -75,9 +83,9 @@ class env:
         elif ID <= 999:
             return 0
 
-    def neighbor(self,ID):
+    def neighbor(self,xy):
         # 计算智能体的邻居的价值，或相邻土地的价值
-        x,y = self.agent_pool[ID].coord
+        x,y = xy
         x_max, y_max = self.map_size
         # 考虑智能体处于地图上的四个角
         if x == 0 and y == y_max-1:
@@ -305,6 +313,7 @@ class env:
                 tmp.append(self.grid.val_map[x,y+1])
 
             return tmp
+    
     def neighbor_value(self,xy):
         '''
         计算周围土地的价值
@@ -383,14 +392,13 @@ class env:
             tmp.append(self.grid.val_map[x,y+1])
             return tmp
 
-    def cal_out_pressure(self, ID):
+    def cal_out_pressure(self, xy, weight):
         '''
         计算外部居住环境吸引力
         G_h^t = w_env*E_env + w_edu*E_edu + w_tra*E_tra + w_pri*E_pri + w_con*E_con
         Agent权重的排序: 交通，地价，公共设施，环境，教育
         '''
-        xy = self.agent_pool[ID].coord
-        weight = self.agent_pool[ID].weight
+        
         E_env = np.min(np.sqrt(np.sum((self.grid.env_xy-xy)**2,1)))
         E_env = np.exp(1-0.001*E_env) # 指数距离衰减函数
 
@@ -405,19 +413,23 @@ class env:
         
         return weight * np.array([E_tra,0,E_inf,E_env,E_edu])
 
-    def location_effect(self,ID):
+    def location_effect(self,ID,xy):
         '''
         计算区位效应
         U_t^h = w_g * G_h^t + w_s * (1 - S_h^t) + e_h^t
         e_h^t是随机变量
+        xy可以是ID的坐标，也可以不是
+        因此可以计算某一位置上的Agent与某一块土地的假设区位效应
         
         '''
-        G = self.cal_out_pressure(ID)
-        S = self.cal_in_pressure(ID)
+        
+        weight = self.agent_pool[ID].weight # 智能体的权重
+        G = self.cal_out_pressure(xy, weight) # 外部居住环境吸引力
+        S = self.cal_in_pressure(ID, xy)
         LE = self.wg*G + self.ws*(1-S) + 0.1*np.random.rand()
         return LE 
 
-    def move(self):
+    def move(self,ID):
         '''
         判断迁居阈值，选择迁居地
 
@@ -427,9 +439,35 @@ class env:
         AW_h^t < WT，不迁居
         U_b^t是Agent视域内最佳居住点的区位效应
         '''
-        
+        # 为了方便计算，规定视域=3x3区域
+        # 计算视域内的最优居住点
+        xy = self.agent_pool[ID].coord
+        is_occupied = []
+        if np.min(xy+[0,1])>=0 and (np.max(xy+[0,1])<=(self.map_size[0]-1)):
+            is_occupied.append(self.is_agent(xy+[0,1]))
+        if np.min(xy+[0,-1])>=0 and (np.max(xy+[0,-1])<=(self.map_size[0]-1)):
+            is_occupied.append(self.is_agent(xy+[0,-1]))
+        if np.min(xy+[1,1])>=0 and (np.max(xy+[1,1])<=(self.map_size[0]-1)):
+            is_occupied.append(self.is_agent(xy+[1,1]))
+        if np.min(xy+[1,-1])>=0 and (np.max(xy+[1,-1])<=(self.map_size[0]-1)):
+            is_occupied.append(self.is_agent(xy+[1,-1]))
+        if np.min(xy+[1,0])>=0 and (np.max(xy+[1,0])<=(self.map_size[0]-1)):
+            is_occupied.append(self.is_agent(xy+[1,0]))
+        if np.min(xy+[-1,0])>=0 and (np.max(xy+[-1,0])<=(self.map_size[0]-1)):
+            is_occupied.append(self.is_agent(xy+[-1,0]))
+        if np.min(xy+[-1,-1])>=0 and (np.max(xy+[-1,-1])<=(self.map_size[0]-1)):
+            is_occupied.append(self.is_agent(xy+[-1,-1]))
+        if np.min(xy+[-1,1])>=0 and (np.max(xy+[-1,1])<=(self.map_size[0]-1)):
+            is_occupied.append(self.is_agent(xy+[-1,1]))
 
-        pass
+        for ID in is_occupied:
+            if ID>999:
+                xy = self.agent_pool[ID].coord
+                LE = self.location_effect(ID,xy)
+            elif ID<999:
+                
+
+        
 
     def change_value(self):
         '''
@@ -450,19 +488,19 @@ class env:
         for x in range(self.map_size[0]):
             for y in range(self.map_size[1]):
                 ID = self.is_agent(np.array([x,y]))
+                V = self.grid.val_map[x,y] # 当前地价
+                V_n = self.neighbor_value([x,y]) # 邻居的地价
                 if ID: # 被智能体占据
-                    V = self.grid.val_map[x,y] # 当前地价
                     income = self.agent_pool[ID].income # 当前收入
-                    V_n = self.neighbor_value([x,y])
+                    
                     V_n.append(income)
                     V_n = np.mean(V_n)
                     self.grid.val_map[x,y] = self.a*(1+self.R)*V + (1-self.a)*V_n
                 elif not ID: # 空地
-                    
+                    V_n.append(V)
+                    V_n = np.mean(V_n)
+                    self.grid.val_map[x,y] = self.a*(1-self.D)*V + (1-self.a)*V_n
 
-
-        
-        pass
 
     def gen_agent(self, N):
         # 生成新智能体
