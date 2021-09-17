@@ -314,9 +314,36 @@ class env:
 
             return tmp
     
+    def meshgrid(self,offset=[10,10]):
+        '''
+        生成类似于
+        ((-2,-2),(-2,-1),(-2,0),(-2,1),(-2,2),
+        (-1,-2),(-1,-1),(-1,0),(-1,1),(-1,2),
+        (0,-2),(0,-1),(0,1),(0,2),
+        (1,-2),(1,-1),(1,0),(1,1),(1,2),
+        (2,-2),(2,-1),(2,0),(2,1),(2,2))
+        这样的矩阵
+        '''
+        x_offset,y_offset = offset
+        tmp = []
+        for x in range(-x_offset,x_offset):
+            for y in range(-y_offset,y_offset):
+                tmp.append([x,y])
+        tmp.pop(int(0.5*2*x_offset*2*y_offset+y_offset)) # 刨除(0,0)点
+
+        return tmp
+
     def neighbor_value(self,xy):
         '''
         计算周围土地的价值
+        '''
+        x,y = xy
+        dir = ((-2,-2),(-2,-1),(-2,0),(-2,1),(-2,2),
+                (-1,-2),(-1,-1),(-1,0),(-1,1),(-1,2),
+                (0,-2),(0,-1),(0,1),(0,2),
+                (1,-2),(1,-1),(1,0),(1,1),(1,2),
+                (2,-2),(2,-1),(2,0),(2,1),(2,2))
+        for 
         '''
         x,y = xy
         x_max, y_max = self.map_size
@@ -390,6 +417,8 @@ class env:
             tmp.append(self.grid.val_map[x+1,y+1])
             tmp.append(self.grid.val_map[x-1,y+1])
             tmp.append(self.grid.val_map[x,y+1])
+        '''
+        
             return tmp
 
     def cal_out_pressure(self, xy, weight):

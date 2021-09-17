@@ -7,7 +7,7 @@ class Grid:
         self.init_value = 1000 # 初始地价在[0,1000]随机分布
         self.env_num = 5 # 自然资源[河流，山脉]的数量
         self.work_num = 20 # 企业的数量
-        
+        self.tra_num = 50 # 地铁站位置
         self.map_size = map_size
         self.init_map()
     
@@ -37,12 +37,12 @@ class Grid:
     def init_work_map(self,):
         # 初始化工作地点的地图
         work_map = np.zeros(self.map_size)
-        xy = np.random.randint(np.ones((self.work_num,2))*[480,480]) # 取480保证基础设施不在地图边缘
+        xy = np.random.randint(np.ones((self.work_num,2))*[495,495]) # 取480保证企业不在地图边缘
         for xxyy in xy:
             x,y = xxyy
             work_map[x,y] = 1
         return work_map, xy
-
+    '''
     def init_inf_map(self):
         # 初始化基础设施地图
         inf_map = np.zeros(self.map_size)
@@ -61,13 +61,19 @@ class Grid:
             x,y = xxyy
             edu_map[x,y] = 1
         return edu_map, xy
-    
+    '''
     def init_val_map(self):
+        # 初始化地价
         return np.random.randint(np.ones(self.map_size)*self.init_value)
     
     def init_tra_map(self):
         # 基础设施周围具有较好的交通等级
         tra_map = np.zeros(self.map_size)
+        xy = np.random.randint(np.ones((self.tra_num,2))*[495,495]) # 取480保证企业不在地图边缘
+        for xxyy in xy:
+            x,y = xxyy
+            tra_map[x,y] = 1
+        
         '''
         for xy in self.inf_xy:
             x,y = xy
@@ -81,13 +87,18 @@ class Grid:
             tra_map[x-1,y+1] = 2
             tra_map[x+1,y-1] = 2
         '''
-        xy = np.zeros((self.map_size[0],2))
+
+        '''
+        xy = np.zeros((self.map_size[0],2)) # 解析曲线表示一条道路
         for x in range(self.map_size[0]):
             y = np.sin(0.1*x)
             xy[x,0] = x, xy[x,1] = y
             tra_map[x,y] = 1
+        '''
+        
         return tra_map, xy
 
+    '''
     def init_env_map(self):
         # 初始化自然资源地图
         env_map = np.zeros(self.map_size)
@@ -101,14 +112,17 @@ class Grid:
             env_map[x,y] = 1
         env_xy = np.array(env_xy)
         return env_map, env_xy
+    '''
     
     def init_use_map(self):
-        # 1:自然资源
         # 2:智能体
         use_map = np.zeros(self.map_size)
-        for xy in self.env_xy:
+        for xy in self.tra_xy:
             x,y = xy
-            use_map[x,y] = -1
+            use_map[x,y] = -1 # 地铁站点不可占用
+        for xy in self.work_xy:
+            x,y = xy
+            use_map[x,y] = -2 # 工作地点不可占用
         return use_map
     
     
