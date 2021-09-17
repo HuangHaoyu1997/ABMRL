@@ -6,6 +6,7 @@ class Grid:
         self.edu_num = 20 # 学校数量
         self.init_value = 1000 # 初始地价在[0,1000]随机分布
         self.env_num = 5 # 自然资源[河流，山脉]的数量
+        self.work_num = 20 # 企业的数量
         
         self.map_size = map_size
         self.init_map()
@@ -14,10 +15,10 @@ class Grid:
         # 初始化各图层
 
         # 基础设施
-        self.inf_map, self.inf_xy = self.init_inf_map()
+        # self.inf_map, self.inf_xy = self.init_inf_map()
         
         # 教育
-        self.edu_map, self.edu_xy = self.init_edu_map() 
+        # self.edu_map, self.edu_xy = self.init_edu_map() 
         
         # 地价
         self.val_map = self.init_val_map()
@@ -25,12 +26,23 @@ class Grid:
         # 交通地图
         self.tra_map, self.tra_xy = self.init_tra_map()
         
+        # 工作地图
+        self.work_map, self.work_xy = self.init_work_map()
         # 环境
-        self.env_map, self.env_xy = self.init_env_map()
+        # self.env_map, self.env_xy = self.init_env_map()
 
         # 土地利用
         self.use_map = self.init_use_map()
         
+    def init_work_map(self,):
+        # 初始化工作地点的地图
+        work_map = np.zeros(self.map_size)
+        xy = np.random.randint(np.ones((self.work_num,2))*[480,480]) # 取480保证基础设施不在地图边缘
+        for xxyy in xy:
+            x,y = xxyy
+            work_map[x,y] = 1
+        return work_map, xy
+
     def init_inf_map(self):
         # 初始化基础设施地图
         inf_map = np.zeros(self.map_size)
