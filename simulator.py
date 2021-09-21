@@ -1,4 +1,5 @@
 import numpy as np
+import random
 import matplotlib.pyplot as plt
 from numpy.core.defchararray import count
 from numpy.testing._private.utils import rand
@@ -38,8 +39,11 @@ class env:
         '''
         为不同的企业赋予不同的收入增速
         '''
-        self.grid.work_xy.shape[0]
-        np.ones((self.work_num,2))
+        num_work = self.grid.work_xy.shape[0]
+        self.r_work = [random.uniform(self.r*0.8,self.r*1.2) for _ in range(num_work)]
+
+        
+
     def step(self):
         # 单步执行函数
         # 改变收入，更新地价，执行每个智能体的迁居判断
@@ -160,7 +164,7 @@ class env:
         '''
         x,y = xy
         # 交通        
-        E_tra = np.min(np.sqrt(np.sum((self.grid.tra_xy-xy)**2,1)))
+        E_tra = np.min(np.sqrt(np.sum((self.grid.tra_xy-xy)**2,1))) # 与最近地铁站点的距离
         E_tra = np.exp(1-0.001*E_tra) # 指数距离衰减函数
         
         # 通勤
