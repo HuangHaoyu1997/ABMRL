@@ -28,6 +28,7 @@ class Grid:
         
         # 工作地图
         self.work_map, self.work_xy = self.init_work_map()
+        
         # 环境
         # self.env_map, self.env_xy = self.init_env_map()
 

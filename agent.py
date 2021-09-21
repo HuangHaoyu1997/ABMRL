@@ -10,7 +10,12 @@ class Agent:
         self.clas, self.RF, self.weight = self.def_class(max_income=1000) # 确定阶层,视域和权重
         
     def update_income(self, r , max_income):
-        r1, r2 = np.random.randint([20,20])-10
+        '''
+        更新收入
+        r：增长率
+        max_income：收入上限
+        '''
+        r1, r2 = np.random.randint([20,20])-10 # r1，r2都是[-10,10]内的随机整数
         tmp = self.income + r * self.income * (1 - self.income/max_income)
         self.income = tmp + (r1 - r2)/2
         return self.income

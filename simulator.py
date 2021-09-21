@@ -83,245 +83,32 @@ class env:
         elif ID <= 999:
             return 0
 
-    def neighbor(self,xy):
-        # 计算智能体的邻居的价值，或相邻土地的价值
+    def neighbor(self,xy,offset=10):
+        '''
+        计算邻域内被占据的格点数（已出租房屋）占比
+        总地块数量要排除不能访问的地块
+        input：中心点坐标
+        output：已占据格点数/总格点数
+        '''
         x,y = xy
-        x_max, y_max = self.map_size
-        # 考虑智能体处于地图上的四个角
-        if x == 0 and y == y_max-1:
-            tmp = []
-            if self.is_agent(x+1,y): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y)].income)
-            elif not self.is_agent(x+1,y): # 空地
-                tmp.append(self.grid.val_map[x+1,y])
+        dir = self.meshgrid(offset=[offset,offset])
+        n_occupied, n_total = 0, 0
+        for off_x,off_y in dir:
+            if ((x+off_x) >= 0) and ((x+off_x)<self.map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<self.map_size[1]): # 不越界
+                if self.grid.use_map[x+off_x,y+off_y] >= 0: # 能访问
+                    n_total += 1
+                    if self.grid.use_map[x+off_x,y+off_y] >= 1000: # 1000以上的id代表agent
+                        n_occupied += 1
+        return n_occupied / n_total
 
-            if self.is_agent(x+1,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y-1)].income)
-            elif not self.is_agent(x+1,y-1): # 空地
-                tmp.append(self.grid.val_map[x+1,y-1])
-            
-            if self.is_agent(x,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x,y-1)].income)
-            elif not self.is_agent(x,y-1): # 空地
-                tmp.append(self.grid.val_map[x,y-1])
-            return tmp
-
-        elif x == x_max-1 and y == 0:
-            tmp = []
-            if self.is_agent(x-1,y): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y)].income)
-            elif not self.is_agent(x-1,y): # 空地
-                tmp.append(self.grid.val_map[x-1,y])
-
-            if self.is_agent(x-1,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y+1)].income)
-            elif not self.is_agent(x-1,y+1): # 空地
-                tmp.append(self.grid.val_map[x-1,y+1])
-            
-            if self.is_agent(x,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x,y+1)].income)
-            elif not self.is_agent(x,y+1): # 空地
-                tmp.append(self.grid.val_map[x,y+1])
-            return tmp
-
-        elif x == x_max-1 and y == y_max-1:
-            tmp = []
-            if self.is_agent(x-1,y): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y)].income)
-            elif not self.is_agent(x-1,y): # 空地
-                tmp.append(self.grid.val_map[x-1,y])
-
-            if self.is_agent(x-1,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y-1)].income)
-            elif not self.is_agent(x-1,y-1): # 空地
-                tmp.append(self.grid.val_map[x-1,y-1])
-            
-            if self.is_agent(x,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x,y-1)].income)
-            elif not self.is_agent(x,y-1): # 空地
-                tmp.append(self.grid.val_map[x,y-1])
-            return tmp
-
-        elif x == 0 and y == 0:
-            tmp = []
-            if self.is_agent(x+1,y): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y)].income)
-            elif not self.is_agent(x+1,y): # 空地
-                tmp.append(self.grid.val_map[x+1,y])
-
-            if self.is_agent(x+1,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y+1)].income)
-            elif not self.is_agent(x+1,y+1): # 空地
-                tmp.append(self.grid.val_map[x+1,y+1])
-            
-            if self.is_agent(x,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x,y+1)].income)
-            elif not self.is_agent(x,y+1): # 空地
-                tmp.append(self.grid.val_map[x,y+1])
-            return tmp
         
-        # 考虑智能体处于地图上的四条边，不包含四角
-        elif x == 0 and (y>0 and y<y_max-1):
-            tmp = []
-            if self.is_agent(x+1,y): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y)].income)
-            elif not self.is_agent(x+1,y): # 空地
-                tmp.append(self.grid.val_map[x+1,y])
-
-            if self.is_agent(x+1,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y+1)].income)
-            elif not self.is_agent(x+1,y+1): # 空地
-                tmp.append(self.grid.val_map[x+1,y+1])
-            
-            if self.is_agent(x+1,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y-1)].income)
-            elif not self.is_agent(x+1,y-1): # 空地
-                tmp.append(self.grid.val_map[x+1,y-1])
-
-            if self.is_agent(x,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x,y+1)].income)
-            elif not self.is_agent(x,y+1): # 空地
-                tmp.append(self.grid.val_map[x,y+1])
-            
-            if self.is_agent(x,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x,y-1)].income)
-            elif not self.is_agent(x,y-1): # 空地
-                tmp.append(self.grid.val_map[x,y-1])
-            return tmp
-        elif x == x_max-1 and (y>0 and y<y_max-1):
-            tmp = []
-            if self.is_agent(x-1,y): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y)].income)
-            elif not self.is_agent(x-1,y): # 空地
-                tmp.append(self.grid.val_map[x-1,y])
-
-            if self.is_agent(x-1,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y+1)].income)
-            elif not self.is_agent(x-1,y+1): # 空地
-                tmp.append(self.grid.val_map[x-1,y+1])
-            
-            if self.is_agent(x-1,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y-1)].income)
-            elif not self.is_agent(x-1,y-1): # 空地
-                tmp.append(self.grid.val_map[x-1,y-1])
-
-            if self.is_agent(x,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x,y+1)].income)
-            elif not self.is_agent(x,y+1): # 空地
-                tmp.append(self.grid.val_map[x,y+1])
-            
-            if self.is_agent(x,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x,y-1)].income)
-            elif not self.is_agent(x,y-1): # 空地
-                tmp.append(self.grid.val_map[x,y-1])
-            return tmp
-        elif (x>0 and x<x_max-1) and y == 0:
-            tmp = []
-            if self.is_agent(x-1,y): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y)].income)
-            elif not self.is_agent(x-1,y): # 空地
-                tmp.append(self.grid.val_map[x-1,y])
-
-            if self.is_agent(x+1,y): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y)].income)
-            elif not self.is_agent(x+1,y): # 空地
-                tmp.append(self.grid.val_map[x+1,y])
-            
-            if self.is_agent(x-1,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y+1)].income)
-            elif not self.is_agent(x-1,y+1): # 空地
-                tmp.append(self.grid.val_map[x-1,y+1])
-
-            if self.is_agent(x,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x,y+1)].income)
-            elif not self.is_agent(x,y+1): # 空地
-                tmp.append(self.grid.val_map[x,y+1])
-            
-            if self.is_agent(x+1,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y+1)].income)
-            elif not self.is_agent(x+1,y+1): # 空地
-                tmp.append(self.grid.val_map[x+1,y+1])
-            return tmp
-        elif (x>0 and x<x_max-1) and y == y_max-1:
-            tmp = []
-            if self.is_agent(x-1,y): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y)].income)
-            elif not self.is_agent(x-1,y): # 空地
-                tmp.append(self.grid.val_map[x-1,y])
-
-            if self.is_agent(x+1,y): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y)].income)
-            elif not self.is_agent(x+1,y): # 空地
-                tmp.append(self.grid.val_map[x+1,y])
-            
-            if self.is_agent(x-1,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y-1)].income)
-            elif not self.is_agent(x-1,y-1): # 空地
-                tmp.append(self.grid.val_map[x-1,y-1])
-
-            if self.is_agent(x,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x,y-1)].income)
-            elif not self.is_agent(x,y-1): # 空地
-                tmp.append(self.grid.val_map[x,y-1])
-            
-            if self.is_agent(x+1,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y-1)].income)
-            elif not self.is_agent(x+1,y-1): # 空地
-                tmp.append(self.grid.val_map[x+1,y-1])
-            return tmp
-        # 考虑最一般的情况
-        else:
-            tmp = []
-            if self.is_agent(x-1,y): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y)].income)
-            elif not self.is_agent(x-1,y): # 空地
-                tmp.append(self.grid.val_map[x-1,y])
-
-            if self.is_agent(x+1,y): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y)].income)
-            elif not self.is_agent(x+1,y): # 空地
-                tmp.append(self.grid.val_map[x+1,y])
-            
-            if self.is_agent(x-1,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y-1)].income)
-            elif not self.is_agent(x-1,y-1): # 空地
-                tmp.append(self.grid.val_map[x-1,y-1])
-
-            if self.is_agent(x,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x,y-1)].income)
-            elif not self.is_agent(x,y-1): # 空地
-                tmp.append(self.grid.val_map[x,y-1])
-            
-            if self.is_agent(x+1,y-1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y-1)].income)
-            elif not self.is_agent(x+1,y-1): # 空地
-                tmp.append(self.grid.val_map[x+1,y-1])
-            
-            if self.is_agent(x+1,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x+1,y+1)].income)
-            elif not self.is_agent(x+1,y+1): # 空地
-                tmp.append(self.grid.val_map[x+1,y+1])
-
-            if self.is_agent(x-1,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x-1,y+1)].income)
-            elif not self.is_agent(x-1,y+1): # 空地
-                tmp.append(self.grid.val_map[x-1,y+1])
-
-            if self.is_agent(x,y+1): # 被智能体占据
-                tmp.append(self.agent_pool[self.is_agent(x,y+1)].income)
-            elif not self.is_agent(x,y+1): # 空地
-                tmp.append(self.grid.val_map[x,y+1])
-
-            return tmp
     
     def meshgrid(self,offset=[10,10],pop=True):
         '''
         生成类似于如下的矩阵
-        ((-2,-2),(-2,-1),(-2,0),(-2,1),(-2,2),
-        (-1,-2),(-1,-1),(-1,0),(-1,1),(-1,2),
-        (0,-2),(0,-1),(0,1),(0,2),
-        (1,-2),(1,-1),(1,0),(1,1),(1,2),
-        (2,-2),(2,-1),(2,0),(2,1),(2,2))
+        ((-1,-1),(-1,0),(-1,1),
+        (0,-1),         (0,1),
+        (1,-1),(1,0),(1,1))
         '''
         x_offset,y_offset = offset
         dir = []
@@ -333,97 +120,20 @@ class env:
 
         return dir
 
-    def neighbor_value(self,xy):
+    def neighbor_value(self,xy,offset=10):
         '''
         计算周围土地的价值
         input：xy坐标
         output：地价list和均值
         '''
         x,y = xy
-        dir = self.meshgrid()
+        dir = self.meshgrid(offset=[offset,offset])
         n_value = []
         for off_x,off_y in dir:
             if ((x+off_x) >= 0) and ((x+off_x)<self.map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<self.map_size[1]): # 不越界
                 if self.grid.use_map[x+off_x,y+off_y] >= 0: # 能访问
                     n_value.append(self.grid.val_map[x+off_x,y+off_y])
         return n_value, np.mean(n_value)
-
-        '''
-        x,y = xy
-        x_max, y_max = self.map_size
-        # 考虑地块处于地图上的四个角
-        if x == 0 and y == y_max-1:
-            tmp = []
-            tmp.append(self.grid.val_map[x+1,y])
-            tmp.append(self.grid.val_map[x+1,y-1])
-            tmp.append(self.grid.val_map[x,y-1])
-            return tmp
-        elif x == x_max-1 and y == 0:
-            tmp = []
-            tmp.append(self.grid.val_map[x-1,y])
-            tmp.append(self.grid.val_map[x-1,y+1])
-            tmp.append(self.grid.val_map[x,y+1])
-            return tmp
-        elif x == x_max-1 and y == y_max-1:
-            tmp = []
-            tmp.append(self.grid.val_map[x-1,y])
-            tmp.append(self.grid.val_map[x-1,y-1])
-            tmp.append(self.grid.val_map[x,y-1])
-            return tmp
-        elif x == 0 and y == 0:
-            tmp = []
-            tmp.append(self.grid.val_map[x+1,y])
-            tmp.append(self.grid.val_map[x+1,y+1])
-            tmp.append(self.grid.val_map[x,y+1])
-            return tmp
-        
-        # 考虑智能体处于地图上的四条边，不包含四角
-        elif x == 0 and (y>0 and y<y_max-1):
-            tmp = []
-            tmp.append(self.grid.val_map[x+1,y])
-            tmp.append(self.grid.val_map[x+1,y+1])
-            tmp.append(self.grid.val_map[x+1,y-1])
-            tmp.append(self.grid.val_map[x,y+1])
-            tmp.append(self.grid.val_map[x,y-1])
-            return tmp
-        elif x == x_max-1 and (y>0 and y<y_max-1):
-            tmp = []
-            tmp.append(self.grid.val_map[x-1,y])
-            tmp.append(self.grid.val_map[x-1,y+1])
-            tmp.append(self.grid.val_map[x-1,y-1])
-            tmp.append(self.grid.val_map[x,y+1])
-            tmp.append(self.grid.val_map[x,y-1])
-            return tmp
-        elif (x>0 and x<x_max-1) and y == 0:
-            tmp = []
-            tmp.append(self.grid.val_map[x-1,y])
-            tmp.append(self.grid.val_map[x+1,y])
-            tmp.append(self.grid.val_map[x-1,y+1])
-            tmp.append(self.grid.val_map[x,y+1])
-            tmp.append(self.grid.val_map[x+1,y+1])
-            return tmp
-        elif (x>0 and x<x_max-1) and y == y_max-1:
-            tmp = []
-            tmp.append(self.grid.val_map[x-1,y])
-            tmp.append(self.grid.val_map[x+1,y])
-            tmp.append(self.grid.val_map[x-1,y-1])
-            tmp.append(self.grid.val_map[x,y-1])
-            tmp.append(self.grid.val_map[x+1,y-1])
-            return tmp
-        # 考虑最一般的情况
-        else:
-            tmp = []
-            tmp.append(self.grid.val_map[x-1,y])
-            tmp.append(self.grid.val_map[x+1,y])
-            tmp.append(self.grid.val_map[x-1,y-1])
-            tmp.append(self.grid.val_map[x,y-1])
-            tmp.append(self.grid.val_map[x+1,y-1])
-            tmp.append(self.grid.val_map[x+1,y+1])
-            tmp.append(self.grid.val_map[x-1,y+1])
-            tmp.append(self.grid.val_map[x,y+1])
-        '''
-        
-            
 
     def cal_out_pressure(self, xy, weight):
         '''
@@ -498,7 +208,7 @@ class env:
                 xy = self.agent_pool[ID].coord
                 LE = self.location_effect(ID,xy)
             elif ID<999:
-                
+                pass
 
         
 
