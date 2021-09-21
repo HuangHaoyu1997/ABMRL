@@ -40,6 +40,7 @@ class env:
     def work_income(self,):
         '''
         为不同的企业赋予不同的收入增速
+        按理说，最大收入也应该是区分不同企业的
         '''
         self.num_work = self.grid.work_xy.shape[0]
         self.r_work = [random.uniform(self.r*0.8,self.r*1.2) for _ in range(self.num_work)]
@@ -51,19 +52,33 @@ class env:
         # 改变收入，更新地价，执行每个智能体的迁居判断
         # 改变每个阶层的收入范围
         # 将移走的地块重新置为0
-        
+
         pass
 
     def change_income(self):
-        # 更新智能体的收入
+        '''
+        更新群体收入和所属阶层
+        更新各阶层收入范围
+        '''
         self.income_list = []
-        for a in self.agent_pool:
-            income = a.update_income(self.r, self.max_income)
+        shuffle_pool = random.sample(self.agent_pool,len(self.agent_pool)) # 打乱更新顺序
+        for a in shuffle_pool:
+            a_work = a.work_id
+            income = a.update_income(self.r_work[a_work], self.max_income)
             self.income_list.append(income)
         max_income = np.max(self.income_list)
+        
         # 更新智能体的阶层、视域和权重
         for a in self.agent_pool:
             a.def_class(max_income)
+        
+        # 更新各阶层收入取值范围
+        self.income = np.array([[0,0.175],
+                                [0.175,0.35],
+                                [0.35,0.5],
+                                [0.5,0.75],
+                                [0.75,1.0]]) * max_income
+
 
 
     def cal_in_pressure(self, ID, xy):
