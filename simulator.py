@@ -61,8 +61,9 @@ class env:
         更新各阶层收入范围
         '''
         self.income_list = []
-        shuffle_pool = random.sample(self.agent_pool,len(self.agent_pool)) # 打乱更新顺序
-        for a in shuffle_pool:
+        shuffle_pool = random.sample(list(self.agent_pool),len(self.agent_pool)) # 打乱更新顺序
+        for idx in shuffle_pool:
+            a = self.agent_pool[idx]
             a_work = a.work_id
             income = a.update_income(self.r_work[a_work], self.max_income)
             self.income_list.append(income)
@@ -109,7 +110,7 @@ class env:
         ID = self.grid.use_map[x,y]
         if ID > 999:
             return ID
-        elif ID <= 999:
+        elif ID < 999:
             return 0
 
     def neighbor(self,xy,offset=10):
@@ -202,13 +203,15 @@ class env:
         U_t^h = w_g * G_h^t + w_s * (1 - S_h^t) + e_h^t
         e_h^t是随机变量
         xy可以是ID的坐标，也可以不是
-        因此可以计算某一位置上的Agent与某一块土地的假设区位效应
+        因此可以计算给定位置的Agent与另一块土地的假设区位效应
         
         '''
         
         weight = self.agent_pool[ID].weight # 智能体的权重
-        G = self.cal_out_pressure(xy, weight) # 外部居住环境吸引力
-        S = self.cal_in_pressure(ID, xy) # 内部压力
+        work_id = self.agent_pool[ID].work_id
+        work_xy = self.grid.work_xy[work_id]
+        G = self.cal_out_pressure(xy, work_xy, weight) # 外部居住环境吸引力
+        S = self.cal_in_pressure(ID, xy) # ID智能体在xy位置的内部压力
         LocalEffect = self.wg*G + self.ws*(1-S) + 0.1*np.random.rand()
         return LocalEffect 
 
@@ -225,7 +228,15 @@ class env:
         # 为了方便计算，规定视域=3x3区域
         # 计算视域内的最优居住点
         xy = self.agent_pool[ID].coord
+        x,y = xy
+        dir = self.meshgrid(offset=[50,50])
         is_occupied = []
+        for off_x,off_y in dir:
+            if ((x+off_x)>=0) and ((x+off_x)<self.map_size[0]) and ((y+off_y)>=0) and ((y+off_y)<self.map_size[1]): # 不越界
+                if self.grid.use_map[x+off_x,y+off_y] >= 0: # 可用地块
+                    self.is_agent([x+off_x,y+off_y])
+
+
         if np.min(xy+[0,1])>=0 and (np.max(xy+[0,1])<=(self.map_size[0]-1)):
             is_occupied.append(self.is_agent(xy+[0,1]))
         if np.min(xy+[0,-1])>=0 and (np.max(xy+[0,-1])<=(self.map_size[0]-1)):
@@ -252,7 +263,7 @@ class env:
 
         
 
-    def change_value(self):
+    def update_value(self):
         '''
         改变土地价值
         土地价值与上一时刻的地价、Agent所持有的财富、周边地价有关
@@ -267,7 +278,7 @@ class env:
         V_{ij}^{t+1} = a*(1-D)*V_{ij}^t 
                         + (1-a)*[(\sum_{m \in \Omega(ij)} V_m^t)/9]
         D是折旧率
-        '''
+        
         for x in range(self.map_size[0]):
             for y in range(self.map_size[1]):
                 ID = self.is_agent(np.array([x,y]))
@@ -283,6 +294,31 @@ class env:
                     V_n.append(V)
                     V_n = np.mean(V_n)
                     self.grid.val_map[x,y] = self.a*(1-self.D)*V + (1-self.a)*V_n
+        '''
+
+        '''
+        新的更新规则是：
+        地价变化由三部分组成，供需关系+历史地价+周围影响
+        供需关系是周围地块的租赁状况对当前地块的价格影响，周围租出去的地块越多，说明越可能是卖方市场，价格会被推高，反之则应该被衰减
+        历史地价是上一时刻的当前地价
+        周围影响是周围地块的平均地价
+
+        供需关系：乘性关系
+        历史地价、周围影响：加性关系
+        新地价 = 供需关系缩放因子*（历史地价+周围影响）
+        '''
+
+        x_shuffle = random.sample(list(range(self.map_size[0])),self.map_size[0])
+        y_shuffle = random.sample(list(range(self.map_size[1])),self.map_size[1])
+        # 随机顺序更新地价
+        for x in x_shuffle:
+            for y in y_shuffle:
+                if self.grid.use_map[x,y] >= 0: # 可访问地块
+                    history_value = self.grid.val_map[x,y]
+                    neighbor_value = self.neighbor_value([x,y])
+                    neighbor_occupy = self.neighbor([x,y])
+                    if neighbor_occupy 
+
 
 
     def gen_agent(self, N):
