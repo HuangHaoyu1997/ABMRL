@@ -314,36 +314,40 @@ class env:
 
             return tmp
     
-    def meshgrid(self,offset=[10,10]):
+    def meshgrid(self,offset=[10,10],pop=True):
         '''
-        生成类似于
+        生成类似于如下的矩阵
         ((-2,-2),(-2,-1),(-2,0),(-2,1),(-2,2),
         (-1,-2),(-1,-1),(-1,0),(-1,1),(-1,2),
         (0,-2),(0,-1),(0,1),(0,2),
         (1,-2),(1,-1),(1,0),(1,1),(1,2),
         (2,-2),(2,-1),(2,0),(2,1),(2,2))
-        这样的矩阵
         '''
         x_offset,y_offset = offset
-        tmp = []
+        dir = []
         for x in range(-x_offset,x_offset):
             for y in range(-y_offset,y_offset):
-                tmp.append([x,y])
-        tmp.pop(int(0.5*2*x_offset*2*y_offset+y_offset)) # 刨除(0,0)点
+                dir.append([x,y])
+        if pop:
+            dir.pop(int(0.5*2*x_offset*2*y_offset+y_offset)) # 刨除(0,0)点
 
-        return tmp
+        return dir
 
     def neighbor_value(self,xy):
         '''
         计算周围土地的价值
+        input：xy坐标
+        output：地价list和均值
         '''
         x,y = xy
-        dir = ((-2,-2),(-2,-1),(-2,0),(-2,1),(-2,2),
-                (-1,-2),(-1,-1),(-1,0),(-1,1),(-1,2),
-                (0,-2),(0,-1),(0,1),(0,2),
-                (1,-2),(1,-1),(1,0),(1,1),(1,2),
-                (2,-2),(2,-1),(2,0),(2,1),(2,2))
-        for 
+        dir = self.meshgrid()
+        n_value = []
+        for off_x,off_y in dir:
+            if ((x+off_x) >= 0) and ((x+off_x)<self.map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<self.map_size[1]): # 不越界
+                if self.grid.use_map[x+off_x,y+off_y] >= 0: # 能访问
+                    n_value.append(self.grid.val_map[x+off_x,y+off_y])
+        return n_value, np.mean(n_value)
+
         '''
         x,y = xy
         x_max, y_max = self.map_size
@@ -419,7 +423,7 @@ class env:
             tmp.append(self.grid.val_map[x,y+1])
         '''
         
-            return tmp
+            
 
     def cal_out_pressure(self, xy, weight):
         '''
