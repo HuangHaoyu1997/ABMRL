@@ -137,11 +137,12 @@ class env:
 
     def cal_out_pressure(self, xy, weight):
         '''
-        计算外部居住环境吸引力
+        计算给定坐标的外部居住环境吸引力
         G_h^t = w_env*E_env + w_edu*E_edu + w_tra*E_tra + w_pri*E_pri + w_con*E_con
         Agent权重的排序: 交通，地价，公共设施，环境，教育
         '''
         
+        '''环境、教育、基础设施
         E_env = np.min(np.sqrt(np.sum((self.grid.env_xy-xy)**2,1)))
         E_env = np.exp(1-0.001*E_env) # 指数距离衰减函数
 
@@ -150,9 +151,18 @@ class env:
         
         E_inf = np.min(np.sqrt(np.sum((self.grid.inf_xy-xy)**2,1)))
         E_inf = np.exp(1-0.001*E_inf) # 指数距离衰减函数
-        
+        '''
+        x,y = xy
+        # 交通        
         E_tra = np.min(np.sqrt(np.sum((self.grid.tra_xy-xy)**2,1)))
         E_tra = np.exp(1-0.001*E_tra) # 指数距离衰减函数
+        
+        # 通勤
+        E_work = 
+
+        # 房价
+        # 实际上外部吸引力与房价并非正比关系，而是对不同人群有不同影响，人们可能更偏好比当前收入稍好一点的房屋，但不喜欢房价高出很多的房屋
+        E_price = self.grid.val_map[x,y] 
         
         return weight * np.array([E_tra,0,E_inf,E_env,E_edu])
 
