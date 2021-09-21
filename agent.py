@@ -2,11 +2,12 @@ import numpy as np
 from numpy.core.defchararray import index
 
 class Agent:
-    def __init__(self, index, coord, income, WT) -> None:
+    def __init__(self, index, coord, income, WT, work_id) -> None:
         self.index = index
         self.coord = coord
         self.income = income # 初始income[100,1000]
         self.WT = WT # 迁居阈值
+        self.work_id = work_id # 所属企业
         self.clas, self.RF, self.weight = self.def_class(max_income=1000) # 确定阶层,视域和权重
         
     def update_income(self, r , max_income):

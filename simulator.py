@@ -22,13 +22,15 @@ class env:
         self.a = 0.5 # 更新地价的权重
         self.class_ratio = np.array([0.1,0.2,0.4,0.2,0.1]) # 低,中低,中,中高,高
         # 各个阶层的初始收入上下限，需要实时更新
+        # 这些数字是通过将最高收入乘以一定系数得到的
+        # 低收入阶层的收入范围是最高收入的[0,0.175],以此类推
         self.income = np.array([[100,175],   # 低
                                 [175,350],   # 中低
                                 [350,500],   # 中
                                 [500,750],   # 中高
                                 [750,1000]]) # 高
         self.WT = 0.15 # 迁居阈值
-
+        self.work_income() # 为每个企业分配随机收入增速
         self.grid = Grid()
         self.agent_pool = {}
         self.pop_size = len(self.agent_pool)
@@ -39,14 +41,16 @@ class env:
         '''
         为不同的企业赋予不同的收入增速
         '''
-        num_work = self.grid.work_xy.shape[0]
-        self.r_work = [random.uniform(self.r*0.8,self.r*1.2) for _ in range(num_work)]
-
+        self.num_work = self.grid.work_xy.shape[0]
+        self.r_work = [random.uniform(self.r*0.8,self.r*1.2) for _ in range(self.num_work)]
+        return None
         
 
     def step(self):
         # 单步执行函数
         # 改变收入，更新地价，执行每个智能体的迁居判断
+        # 改变每个阶层的收入范围
+        # 将移走的地块重新置为0
         
         pass
 
@@ -272,20 +276,31 @@ class env:
         N:新增总人口
         '''
         
-        number = N * self.class_ratio # 将新增总人口按收入阶层比例划分
+        number = np.floor(N * self.class_ratio) # 将新增总人口按收入阶层比例划分
         
-        for i in range(5): # 为每个阶层产生新人口
-            for _ in range(number[i]):
-                xy = np.random.randint(self.map_size) # 随机生成位置
+        for i in range(5): # 为5个阶层产生新人口
+            for _ in range(int(number[i])):
+
+                # while部分的另一种写法是：
+                # 找出use_map的全部空地，随机选一个，这样更快
+                '''
+                xy = np.random.randint(self.map_size)     # 随机生成位置
                 x,y = xy
-                while self.grid.use_map[x,y] != 0: # 如果该位置被占据或不能放置，则重新生成
+                while self.grid.use_map[x,y] != 0:        # 如果该位置被占据或不能放置，则重新生成
                     xy = np.random.randint(self.map_size)
                     x,y = xy
-                ID = self.pop_size + 1000 # 用ID为智能体建立索引
-                self.grid.use_map[x,y] = ID # 在use_map中更新智能体的ID
-                l,h = self.income[i] # 各个阶层的初始收入上下限
+                '''
+                                
+                idxs = np.argwhere(self.grid.use_map==0)
+                xy = random.choice(idxs)
+
+
+                ID = self.pop_size + 1000                 # 用ID为智能体建立索引
+                self.grid.use_map[x,y] = ID               # 在use_map中更新智能体的ID
+                l,h = self.income[i]                      # 各个阶层的初始收入上下限
                 income = np.random.randint(low=l, high=h) # 随机收入
-                self.agent_pool[ID] = Agent(ID,xy,income,self.WT)
+                work_id = random.choice(range(self.num_work)) # 随机分配一个企业
+                self.agent_pool[ID] = Agent(ID,xy,income,self.WT,work_id)
                 self.pop_size += 1
 
     def render(self):
