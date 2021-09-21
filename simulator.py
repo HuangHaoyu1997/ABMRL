@@ -95,7 +95,7 @@ class env:
         x,y = xy
         income = self.agent_pool[ID].income
         price = self.grid.val_map[x,y] # 所占土地地价
-        IorV = self.neighbor(xy) # 计算ID智能体的周围的价值
+        IorV = self.neighbor(xy) # 计算ID智能体的周围土地/智能体的价值
         P = np.mean(IorV)
         S = self.c1 * np.abs(income-price) + self.c2 * np.abs(income-P)
         return S
@@ -108,12 +108,28 @@ class env:
         '''
         x,y = xy
         ID = self.grid.use_map[x,y]
-        if ID > 999:
-            return ID
-        elif ID < 999:
-            return 0
+        if ID > 999:   return ID
+        elif ID < 999: return 0
 
-    def neighbor(self,xy,offset=10):
+    def neighbor(self,xy,offset=5):
+        '''
+        计算邻里平均经济状况
+        也就是xy周围一定范围内的土地/智能体的价值之平均
+        若地块空闲，则计算地价，若地块有人居住，则计算智能体收入
+        
+        '''
+        x,y = xy
+        dir = self.meshgrid(offset=[offset,offset])
+        n_occupied, n_total = 0, 0
+        for off_x,off_y in dir:
+            if ((x+off_x) >= 0) and ((x+off_x)<self.map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<self.map_size[1]): # 不越界
+                if self.grid.use_map[x+off_x,y+off_y] >= 0: # 能访问
+                    id = self.is_agent([x+off_x,y+off_y])
+                    if self.grid.use_map[x+off_x,y+off_y] >= 1000: # 1000以上的id代表agent
+                        n_occupied += 1
+        return n_occupied / n_total
+
+    def occupation(self,xy,offset=10):
         '''
         计算邻域内被占据的格点数（已出租房屋）占比
         总地块数量要排除不能访问的地块
@@ -200,8 +216,10 @@ class env:
     def location_effect(self,ID,xy):
         '''
         计算区位效应
-        U_t^h = w_g * G_h^t + w_s * (1 - S_h^t) + e_h^t
-        e_h^t是随机变量
+        U = wg * G + ws * (1 - S) + e
+        G是外部吸引力
+        S是内部压力
+        e是随机变量
         xy可以是ID的坐标，也可以不是
         因此可以计算给定位置的Agent与另一块土地的假设区位效应
         
@@ -212,47 +230,43 @@ class env:
         work_xy = self.grid.work_xy[work_id]
         G = self.cal_out_pressure(xy, work_xy, weight) # 外部居住环境吸引力
         S = self.cal_in_pressure(ID, xy) # ID智能体在xy位置的内部压力
-        LocalEffect = self.wg*G + self.ws*(1-S) + 0.1*np.random.rand()
-        return LocalEffect 
+        LocationEffect = self.wg*G + self.ws*(1-S) + 0.1*np.random.rand()
+        return LocationEffect 
 
     def move(self,ID):
         '''
         判断迁居阈值，选择迁居地
 
         计算迁居意愿
-        AW_h^t = U_b^t - U_h^t
-        AW_h^t >= WT，迁居
-        AW_h^t < WT，不迁居
-        U_b^t是Agent视域内最佳居住点的区位效应
+        AW = U_best - U
+        AW >= WT，迁居
+        AW < WT，不迁居
+        U_best是Agent视域内最佳居住点的区位效应
         '''
-        # 为了方便计算，规定视域=3x3区域
-        # 计算视域内的最优居住点
+        
+        '''
+        注意：当meshgrid很大时，计算location effect将极其耗费时间
+        应该采用内部压力和外部
+        '''
         xy = self.agent_pool[ID].coord
         x,y = xy
         dir = self.meshgrid(offset=[50,50])
         is_occupied = []
+        le = []
         for off_x,off_y in dir:
             if ((x+off_x)>=0) and ((x+off_x)<self.map_size[0]) and ((y+off_y)>=0) and ((y+off_y)<self.map_size[1]): # 不越界
                 if self.grid.use_map[x+off_x,y+off_y] >= 0: # 可用地块
-                    self.is_agent([x+off_x,y+off_y])
+                    id = self.is_agent([x+off_x,y+off_y])
+                    if id <= 999: # 空地
+                        L_E = self.location_effect(ID,[x+off_x,y+off_y]) # ID智能体在[x+off_x,y+off_y]位置的区位效应
+                        le.append(L_E)
+                        is_occupied.append([x+off_x,y+off_y])
+        max_le = np.max(le)
+        AW = max_le - self.location_effect(ID,xy)
+        if AW >= self.WT: # 超过迁居阈值
+            
 
 
-        if np.min(xy+[0,1])>=0 and (np.max(xy+[0,1])<=(self.map_size[0]-1)):
-            is_occupied.append(self.is_agent(xy+[0,1]))
-        if np.min(xy+[0,-1])>=0 and (np.max(xy+[0,-1])<=(self.map_size[0]-1)):
-            is_occupied.append(self.is_agent(xy+[0,-1]))
-        if np.min(xy+[1,1])>=0 and (np.max(xy+[1,1])<=(self.map_size[0]-1)):
-            is_occupied.append(self.is_agent(xy+[1,1]))
-        if np.min(xy+[1,-1])>=0 and (np.max(xy+[1,-1])<=(self.map_size[0]-1)):
-            is_occupied.append(self.is_agent(xy+[1,-1]))
-        if np.min(xy+[1,0])>=0 and (np.max(xy+[1,0])<=(self.map_size[0]-1)):
-            is_occupied.append(self.is_agent(xy+[1,0]))
-        if np.min(xy+[-1,0])>=0 and (np.max(xy+[-1,0])<=(self.map_size[0]-1)):
-            is_occupied.append(self.is_agent(xy+[-1,0]))
-        if np.min(xy+[-1,-1])>=0 and (np.max(xy+[-1,-1])<=(self.map_size[0]-1)):
-            is_occupied.append(self.is_agent(xy+[-1,-1]))
-        if np.min(xy+[-1,1])>=0 and (np.max(xy+[-1,1])<=(self.map_size[0]-1)):
-            is_occupied.append(self.is_agent(xy+[-1,1]))
 
         for ID in is_occupied:
             if ID>999:
@@ -315,9 +329,16 @@ class env:
             for y in y_shuffle:
                 if self.grid.use_map[x,y] >= 0: # 可访问地块
                     history_value = self.grid.val_map[x,y]
-                    neighbor_value = self.neighbor_value([x,y])
-                    neighbor_occupy = self.neighbor([x,y])
-                    if neighbor_occupy 
+                    _, neighbor_value = self.neighbor_value([x,y])
+                    neighbor_occupy = self.occupation([x,y])
+                    if neighbor_occupy >= 0.8 and neighbor_occupy < 1:      factor = 1.10
+                    elif neighbor_occupy >= 0.6 and neighbor_occupy < 0.8:  factor = 1.05
+                    elif neighbor_occupy >= 0.4 and neighbor_occupy < 0.6:  factor = 1.00
+                    elif neighbor_occupy >= 0.2 and neighbor_occupy < 0.4:  factor = 0.95
+                    elif neighbor_occupy >= 0.0 and neighbor_occupy < 0.2:  factor = 0.90
+
+                    new_value = factor * (0.5*history_value + 0.5*neighbor_value)
+                    self.grid.val_map[x,y] = new_value
 
 
 
