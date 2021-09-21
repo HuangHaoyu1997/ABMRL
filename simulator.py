@@ -48,12 +48,17 @@ class env:
         
 
     def step(self):
+        '''
         # 单步执行函数
         # 改变收入，更新地价，执行每个智能体的迁居判断
         # 改变每个阶层的收入范围
         # 将移走的地块重新置为0
-
-        pass
+        '''
+        shuffle_list = random.sample(list(self.agent_pool),len(self.agent_pool))
+        for idx in shuffle_list:
+            agent = self.agent_pool[idx]
+            self.move(agent.index)
+        
 
     def change_income(self):
         '''
@@ -95,8 +100,7 @@ class env:
         x,y = xy
         income = self.agent_pool[ID].income
         price = self.grid.val_map[x,y] # 所占土地地价
-        IorV = self.neighbor(xy) # 计算ID智能体的周围土地/智能体的价值
-        P = np.mean(IorV)
+        P = self.neighbor(xy) # 邻里平均经济状况
         S = self.c1 * np.abs(income-price) + self.c2 * np.abs(income-P)
         return S
 
@@ -120,14 +124,16 @@ class env:
         '''
         x,y = xy
         dir = self.meshgrid(offset=[offset,offset])
-        n_occupied, n_total = 0, 0
+        sum = 0
         for off_x,off_y in dir:
             if ((x+off_x) >= 0) and ((x+off_x)<self.map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<self.map_size[1]): # 不越界
                 if self.grid.use_map[x+off_x,y+off_y] >= 0: # 能访问
                     id = self.is_agent([x+off_x,y+off_y])
-                    if self.grid.use_map[x+off_x,y+off_y] >= 1000: # 1000以上的id代表agent
-                        n_occupied += 1
-        return n_occupied / n_total
+                    if id >= 1000: # 1000以上的id代表agent
+                        sum += self.agent_pool[id].income # 收入
+                    elif id < 1000: # 空地
+                        sum += self.grid.val_map[x+off_x,y+off_y] # 地价
+        return np.mean(sum)
 
     def occupation(self,xy,offset=10):
         '''
@@ -264,17 +270,15 @@ class env:
         max_le = np.max(le)
         AW = max_le - self.location_effect(ID,xy)
         if AW >= self.WT: # 超过迁居阈值
-            
+            prob = 
+            return True
+        else:
+            return False
 
-
-
-        for ID in is_occupied:
-            if ID>999:
-                xy = self.agent_pool[ID].coord
-                LE = self.location_effect(ID,xy)
-            elif ID<999:
-                pass
-
+    def softmax(self,x):
+        '''
+        softmax函数
+        '''
         
 
     def update_value(self):
