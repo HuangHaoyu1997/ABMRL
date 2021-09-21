@@ -1,14 +1,16 @@
+from hashlib import new
 import numpy as np
 import random
 import matplotlib.pyplot as plt
 from numpy.core.defchararray import count
-from numpy.testing._private.utils import rand
+from numpy.matrixlib import defmatrix
+# from numpy.testing._private.utils import rand
 from agent import *
 from grid import *
 
 class env:
     def __init__(self) -> None:
-        self.map_size = [200,200]
+        self.map_size = [500,500]
         self.init_pop = 500 # 初始人口
         self.max_pop = 6000 # 人口上限
         self.max_income = 5000 # 最高收入
@@ -30,8 +32,9 @@ class env:
                                 [500,750],   # 中高
                                 [750,1000]]) # 高
         self.WT = 0.15 # 迁居阈值
+        self.grid = Grid(map_size=self.map_size)
         self.work_income() # 为每个企业分配随机收入增速
-        self.grid = Grid()
+        
         self.agent_pool = {}
         self.pop_size = len(self.agent_pool)
         
@@ -49,18 +52,20 @@ class env:
 
     def step(self):
         '''
-        # 单步执行函数
-        # 改变收入，更新地价，执行每个智能体的迁居判断
-        # 改变每个阶层的收入范围
-        # 将移走的地块重新置为0
+        单步执行函数
+        改变收入，更新地价，执行每个智能体的迁居判断
+        改变每个阶层的收入范围
+        将移走的地块重新置为0
         '''
         shuffle_list = random.sample(list(self.agent_pool),len(self.agent_pool))
         for idx in shuffle_list:
             agent = self.agent_pool[idx]
-            self.move(agent.index)
-        
+            flag = self.move(agent.index) # 决定是否搬家，以及完成搬家操作
+        self.update_income()
+        self.update_value()
+        return None
 
-    def change_income(self):
+    def update_income(self):
         '''
         更新群体收入和所属阶层
         更新各阶层收入范围
@@ -210,12 +215,12 @@ class env:
         E_tra = np.exp(1-0.001*E_tra) # 指数距离衰减函数
         
         # 通勤
-        E_work = np.sqrt(np.sum((work_xy-xy)**2,1)) # 和指定的企业计算通勤距离
+        E_work = np.sqrt(np.sum((work_xy-xy)**2)) # 和指定的企业计算通勤距离
         # E_work = np.sum(np.abs(work_xy-xy)) # 曼哈顿距离
 
         # 房价
         # 实际上外部吸引力与房价并非正比关系，而是对不同人群有不同影响，人们可能更偏好比当前收入稍好一点的房屋，但不喜欢房价高出很多的房屋
-        E_price = self.grid.val_map[x,y] 
+        E_price = 0.001 * self.grid.val_map[x,y] 
         
         return weight * np.array([E_tra,E_work,E_price])
 
@@ -269,17 +274,23 @@ class env:
                         is_occupied.append([x+off_x,y+off_y])
         max_le = np.max(le)
         AW = max_le - self.location_effect(ID,xy)
+        print(AW)
         if AW >= self.WT: # 超过迁居阈值
-            prob = 
+            prob = self.softmax(le)
+            destination = np.random.choice(list(range(len(le))),p=prob)
+            destination_xy = is_occupied[destination]
+            xx,yy = destination_xy
+            self.grid.use_map[xx,yy] = ID # 新位置
+            self.grid.use_map[x,y] = 0 # 原位置归0
+
             return True
         else:
             return False
 
     def softmax(self,x):
-        '''
-        softmax函数
-        '''
-        
+        '''softmax函数'''
+        x = np.array(x)
+        return np.exp(x)/np.exp(x).sum()
 
     def update_value(self):
         '''
@@ -369,6 +380,7 @@ class env:
                                 
                 idxs = np.argwhere(self.grid.use_map==0)
                 xy = random.choice(idxs)
+                x,y = xy
 
 
                 ID = self.pop_size + 1000                 # 用ID为智能体建立索引
@@ -380,5 +392,39 @@ class env:
                 self.pop_size += 1
 
     def render(self):
+        '''
+        可视化self.grid.use_map
+        根据ID找到Agent的阶层
+        在新画布上区分出agent的阶层
+        '''
+        new_figure = np.zeros(500,500,3)
+        for id in list(self.agent_pool.keys()):
+            x,y = self.agent_pool[id].coord
+            clas = self.agent_pool[id].clas
+            # 根据阶层上色
+            if clas == 'Low':          new_figure[x,y,:] = np.array([220,220,220])
+            elif clas == 'MediumLow':  new_figure[x,y,:] = np.array([170,170,170])
+            elif clas == 'Medium':     new_figure[x,y,:] = np.array([120,120,120])
+            elif clas == 'MediumHigh': new_figure[x,y,:] = np.array([70,70,70])
+            elif clas == 'High':       new_figure[x,y,:] = np.array([20,20,20])
+        for x,y in self.grid.work_xy:
+            new_figure[x,y,:] = [220,50,170] # 标注企业位置
+        for x,y in self.grid.tra_xy:
+            new_figure[x,y,:] = [50,170,220] # 标注地铁站
         
-        pass
+        return new_figure
+
+
+if __name__ == '__main__':
+    T = 1000 # 仿真步长
+    
+    # 初始化模拟器
+    Environment = env()
+    # 生成初始人口
+    Environment.gen_agent(500)
+    # 开始仿真
+    for t in range(T):
+        Environment.step()
+        img = Environment.render()
+
+
