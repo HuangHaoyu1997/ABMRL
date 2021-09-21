@@ -34,6 +34,12 @@ class env:
         
         self.gen_agent(N=500)
 
+    def work_income(self,):
+        '''
+        为不同的企业赋予不同的收入增速
+        '''
+        self.grid.work_xy.shape[0]
+        np.ones((self.work_num,2))
     def step(self):
         # 单步执行函数
         # 改变收入，更新地价，执行每个智能体的迁居判断
@@ -135,11 +141,11 @@ class env:
                     n_value.append(self.grid.val_map[x+off_x,y+off_y])
         return n_value, np.mean(n_value)
 
-    def cal_out_pressure(self, xy, weight):
+    def cal_out_pressure(self, xy, work_xy, weight):
         '''
         计算给定坐标的外部居住环境吸引力
         G_h^t = w_env*E_env + w_edu*E_edu + w_tra*E_tra + w_pri*E_pri + w_con*E_con
-        Agent权重的排序: 交通，地价，公共设施，环境，教育
+        Agent权重的排序: 交通、通勤、地价
         '''
         
         '''环境、教育、基础设施
@@ -158,13 +164,14 @@ class env:
         E_tra = np.exp(1-0.001*E_tra) # 指数距离衰减函数
         
         # 通勤
-        E_work = 
+        E_work = np.sqrt(np.sum((work_xy-xy)**2,1)) # 和指定的企业计算通勤距离
+        # E_work = np.sum(np.abs(work_xy-xy)) # 曼哈顿距离
 
         # 房价
         # 实际上外部吸引力与房价并非正比关系，而是对不同人群有不同影响，人们可能更偏好比当前收入稍好一点的房屋，但不喜欢房价高出很多的房屋
         E_price = self.grid.val_map[x,y] 
         
-        return weight * np.array([E_tra,0,E_inf,E_env,E_edu])
+        return weight * np.array([E_tra,E_work,E_price])
 
     def location_effect(self,ID,xy):
         '''
@@ -178,9 +185,9 @@ class env:
         
         weight = self.agent_pool[ID].weight # 智能体的权重
         G = self.cal_out_pressure(xy, weight) # 外部居住环境吸引力
-        S = self.cal_in_pressure(ID, xy)
-        LE = self.wg*G + self.ws*(1-S) + 0.1*np.random.rand()
-        return LE 
+        S = self.cal_in_pressure(ID, xy) # 内部压力
+        LocalEffect = self.wg*G + self.ws*(1-S) + 0.1*np.random.rand()
+        return LocalEffect 
 
     def move(self,ID):
         '''
@@ -256,8 +263,11 @@ class env:
 
 
     def gen_agent(self, N):
-        # 生成新智能体
-        # N:新增总人口
+        '''
+        生成新智能体
+        N:新增总人口
+        '''
+        
         number = N * self.class_ratio # 将新增总人口按收入阶层比例划分
         
         for i in range(5): # 为每个阶层产生新人口
@@ -269,7 +279,7 @@ class env:
                     x,y = xy
                 ID = self.pop_size + 1000 # 用ID为智能体建立索引
                 self.grid.use_map[x,y] = ID # 在use_map中更新智能体的ID
-                l,h = self.income[i] # 各个阶层的初始收入上限
+                l,h = self.income[i] # 各个阶层的初始收入上下限
                 income = np.random.randint(low=l, high=h) # 随机收入
                 self.agent_pool[ID] = Agent(ID,xy,income,self.WT)
                 self.pop_size += 1
