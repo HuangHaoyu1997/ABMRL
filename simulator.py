@@ -265,14 +265,19 @@ class env:
         is_occupied = []
         le = []
         for off_x,off_y in dir:
-            if ((x+off_x)>=0) and ((x+off_x)<self.map_size[0]) and ((y+off_y)>=0) and ((y+off_y)<self.map_size[1]): # 不越界
-                if self.grid.use_map[x+off_x,y+off_y] >= 0: # 可用地块
+            if ((x+off_x)>=0) and \
+                ((x+off_x)<self.map_size[0]) and \
+                ((y+off_y)>=0) and \
+                ((y+off_y)<self.map_size[1]): # 不越界
+
+                if self.grid.use_map[x+off_x,y+off_y] >= 0: # 是可用地块
                     id = self.is_agent([x+off_x,y+off_y])
                     if id <= 999: # 空地
                         L_E = self.location_effect(ID,[x+off_x,y+off_y]) # ID智能体在[x+off_x,y+off_y]位置的区位效应
                         le.append(L_E)
                         is_occupied.append([x+off_x,y+off_y])
         max_le = np.max(le)
+        print(max_le)
         AW = max_le - self.location_effect(ID,xy)
         print(AW)
         if AW >= self.WT: # 超过迁居阈值
