@@ -38,7 +38,7 @@ class Grid:
     def init_work_map(self,):
         # 初始化工作地点的地图
         work_map = np.zeros(self.map_size)
-        xy = np.random.randint(np.ones((self.work_num,2))*[495,495]) # 取480保证企业不在地图边缘
+        xy = np.random.randint(np.ones((self.work_num,2))*[self.map_size[0]-5,self.map_size[1]-5]) # 取480保证企业不在地图边缘
         for xxyy in xy:
             x,y = xxyy
             work_map[x,y] = 1
@@ -70,7 +70,7 @@ class Grid:
     def init_tra_map(self):
         # 基础设施周围具有较好的交通等级
         tra_map = np.zeros(self.map_size)
-        xy = np.random.randint(np.ones((self.tra_num,2))*[495,495]) # 取480保证企业不在地图边缘
+        xy = np.random.randint(np.ones((self.tra_num,2))*[self.map_size[0]-5,self.map_size[1]-5]) # 取480保证企业不在地图边缘
         for xxyy in xy:
             x,y = xxyy
             tra_map[x,y] = 1

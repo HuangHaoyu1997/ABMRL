@@ -10,9 +10,9 @@ from grid import *
 
 class env:
     def __init__(self) -> None:
-        self.map_size = [500,500]
-        self.init_pop = 500 # 初始人口
-        self.max_pop = 6000 # 人口上限
+        self.map_size = [150,150]
+        self.init_pop = 200 # 初始人口,500
+        self.max_pop = 4000 # 人口上限,6000
         self.max_income = 5000 # 最高收入
         self.r = 0.005 # 收入增速
         self.R = 0.005 # 地价增速
@@ -22,6 +22,8 @@ class env:
         self.ws = 1.0 # 外部压力权重
         self.wg = 1.0 # 内部压力权重
         self.a = 0.5 # 更新地价的权重
+        self.move_step = 10 # 在周围[50,50]范围内计算候选迁居地块
+
         self.class_ratio = np.array([0.1,0.2,0.4,0.2,0.1]) # 低,中低,中,中高,高
         # 各个阶层的初始收入上下限，需要实时更新
         # 这些数字是通过将最高收入乘以一定系数得到的
@@ -57,12 +59,18 @@ class env:
         改变每个阶层的收入范围
         将移走的地块重新置为0
         '''
+        import time
         shuffle_list = random.sample(list(self.agent_pool),len(self.agent_pool))
+        t1 = time.time()
         for idx in shuffle_list:
             agent = self.agent_pool[idx]
             flag = self.move(agent.index) # 决定是否搬家，以及完成搬家操作
+        t2 = time.time()
+        print(t2-t1)
         self.update_income()
+        print('update income done')
         self.update_value()
+        print('update value done')
         return None
 
     def update_income(self):
@@ -262,7 +270,7 @@ class env:
         '''
         xy = self.agent_pool[ID].coord
         x,y = xy
-        dir = self.meshgrid(offset=[50,50])
+        dir = self.meshgrid(offset=[self.move_step, self.move_step])
         is_occupied = []
         le = []
         for off_x,off_y in dir:
@@ -404,7 +412,7 @@ class env:
         根据ID找到Agent的阶层
         在新画布上区分出agent的阶层
         '''
-        new_figure = np.zeros(500,500,3)
+        new_figure = np.zeros(self.map_size[0],self.map_size[1],3)
         for id in list(self.agent_pool.keys()):
             x,y = self.agent_pool[id].coord
             clas = self.agent_pool[id].clas
@@ -423,7 +431,7 @@ class env:
 
 
 if __name__ == '__main__':
-    T = 1000 # 仿真步长
+    T = 10 # 仿真步长
     
     # 初始化模拟器
     Environment = env()
