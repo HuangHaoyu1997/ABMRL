@@ -107,6 +107,7 @@ class env:
         price = self.grid.val_map[x,y] # 所占土地地价
         P = self.neighbor(xy) # 邻里平均经济状况
         S = self.c1 * np.abs(income-price) + self.c2 * np.abs(income-P)
+        # print('income,',income,P)
         return S
 
     def is_agent(self,xy):
@@ -129,15 +130,15 @@ class env:
         '''
         x,y = xy
         dir = self.meshgrid(offset=[offset,offset])
-        sum = 0
+        sum = []
         for off_x,off_y in dir:
             if ((x+off_x) >= 0) and ((x+off_x)<self.map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<self.map_size[1]): # 不越界
                 if self.grid.use_map[x+off_x,y+off_y] >= 0: # 能访问
-                    id = self.is_agent([x+off_x,y+off_y])
+                    id = self.is_agent([x+off_x,y+off_y]) # 查找该地块上有没有人居住
                     if id >= 1000: # 1000以上的id代表agent
-                        sum += self.agent_pool[id].income # 收入
-                    elif id < 1000: # 空地
-                        sum += self.grid.val_map[x+off_x,y+off_y] # 地价
+                        sum.append(self.agent_pool[id].income) # 收入
+                    elif id < 1000: # 1000以下的id代表空地
+                        sum.append(self.grid.val_map[x+off_x,y+off_y]) # 地价
         return np.mean(sum)
 
     def occupation(self,xy,offset=10):
@@ -241,7 +242,7 @@ class env:
         G = self.cal_out_pressure(xy, work_xy, weight).sum() # 外部居住环境吸引力
         S = self.cal_in_pressure(ID, xy) # ID智能体在xy位置的内部压力
         LocationEffect = self.wg*G + self.ws*(1-S) + 0.1*np.random.rand()
-        # print("LE:",LocationEffect)
+        # print("LE:",S)
         return LocationEffect 
 
     def move(self,ID):
@@ -274,12 +275,13 @@ class env:
                     id = self.is_agent([x+off_x,y+off_y])
                     if id <= 999: # 空地
                         L_E = self.location_effect(ID,[x+off_x,y+off_y]) # ID智能体在[x+off_x,y+off_y]位置的区位效应
+                        # print(L_E)
                         le.append(L_E)
                         is_occupied.append([x+off_x,y+off_y])
         max_le = np.max(le)
         AW = max_le - self.location_effect(ID,xy)
         if AW >= self.WT: # 超过迁居阈值
-            print(len(le))
+            # print(le)
             prob = self.softmax(le)
             destination = np.random.choice(list(range(len(le))),p=prob)
             destination_xy = is_occupied[destination]
@@ -295,7 +297,6 @@ class env:
         '''softmax函数'''
         x = np.array(x)
         xx = np.exp(x)/(np.exp(x).sum())
-        print(np.exp(x))
         return xx
 
     def update_value(self):
@@ -432,5 +433,7 @@ if __name__ == '__main__':
     for t in range(T):
         Environment.step()
         img = Environment.render()
+        print(img.shape)
+        plt.imshow(img)
 
 
