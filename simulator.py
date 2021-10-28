@@ -221,7 +221,6 @@ class env:
         # 房价
         # 实际上外部吸引力与房价并非正比关系，而是对不同人群有不同影响，人们可能更偏好比当前收入稍好一点的房屋，但不喜欢房价高出很多的房屋
         E_price = 0.001 * self.grid.val_map[x,y] 
-        
         return weight * np.array([E_tra,E_work,E_price])
 
     def location_effect(self,ID,xy):
@@ -239,9 +238,10 @@ class env:
         weight = self.agent_pool[ID].weight # 智能体的权重
         work_id = self.agent_pool[ID].work_id
         work_xy = self.grid.work_xy[work_id]
-        G = self.cal_out_pressure(xy, work_xy, weight) # 外部居住环境吸引力
+        G = self.cal_out_pressure(xy, work_xy, weight).sum() # 外部居住环境吸引力
         S = self.cal_in_pressure(ID, xy) # ID智能体在xy位置的内部压力
         LocationEffect = self.wg*G + self.ws*(1-S) + 0.1*np.random.rand()
+        # print("LE:",LocationEffect)
         return LocationEffect 
 
     def move(self,ID):
@@ -277,10 +277,9 @@ class env:
                         le.append(L_E)
                         is_occupied.append([x+off_x,y+off_y])
         max_le = np.max(le)
-        print(max_le)
         AW = max_le - self.location_effect(ID,xy)
-        print(AW)
         if AW >= self.WT: # 超过迁居阈值
+            print(len(le))
             prob = self.softmax(le)
             destination = np.random.choice(list(range(len(le))),p=prob)
             destination_xy = is_occupied[destination]
@@ -295,7 +294,9 @@ class env:
     def softmax(self,x):
         '''softmax函数'''
         x = np.array(x)
-        return np.exp(x)/np.exp(x).sum()
+        xx = np.exp(x)/(np.exp(x).sum())
+        print(np.exp(x))
+        return xx
 
     def update_value(self):
         '''
