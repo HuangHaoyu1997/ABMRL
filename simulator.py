@@ -1,17 +1,18 @@
 from hashlib import new
 import numpy as np
 import random
+import numba as nb
 import matplotlib.pyplot as plt
 from numpy.core.defchararray import count
 from numpy.matrixlib import defmatrix
 # from numpy.testing._private.utils import rand
 from agent import *
 from grid import *
-
+import time
 class env:
     def __init__(self) -> None:
         self.map_size = [150,150]
-        self.init_pop = 200 # 初始人口,500
+        self.init_pop = 50 # 初始人口,500
         self.max_pop = 4000 # 人口上限,6000
         self.max_income = 5000 # 最高收入
         self.r = 0.005 # 收入增速
@@ -40,7 +41,7 @@ class env:
         self.agent_pool = {}
         self.pop_size = len(self.agent_pool)
         
-        self.gen_agent(N=500)
+        self.gen_agent(N=self.init_pop)
 
     def work_income(self,):
         '''
@@ -51,7 +52,7 @@ class env:
         self.r_work = [random.uniform(self.r*0.8,self.r*1.2) for _ in range(self.num_work)]
         return None
         
-
+    # @nb.jit()
     def step(self):
         '''
         单步执行函数
@@ -59,14 +60,19 @@ class env:
         改变每个阶层的收入范围
         将移走的地块重新置为0
         '''
-        import time
+        
         shuffle_list = random.sample(list(self.agent_pool),len(self.agent_pool))
-        t1 = time.time()
+        tt = 0
+        print(len(shuffle_list))
         for idx in shuffle_list:
             agent = self.agent_pool[idx]
+            t1 = time.time()
             flag = self.move(agent.index) # 决定是否搬家，以及完成搬家操作
-        t2 = time.time()
-        print(t2-t1)
+            t2 = time.time()
+            tt += (t2-t1)
+        print(tt)
+
+        
         self.update_income()
         print('update income done')
         self.update_value()
@@ -89,6 +95,7 @@ class env:
         
         # 更新智能体的阶层、视域和权重
         for a in self.agent_pool:
+            print(a)
             a.def_class(max_income)
         
         # 更新各阶层收入取值范围
@@ -370,8 +377,6 @@ class env:
                     new_value = factor * (0.5*history_value + 0.5*neighbor_value)
                     self.grid.val_map[x,y] = new_value
 
-
-
     def gen_agent(self, N):
         '''
         生成新智能体
@@ -435,11 +440,13 @@ if __name__ == '__main__':
     
     # 初始化模拟器
     Environment = env()
-    # 生成初始人口
-    Environment.gen_agent(500)
     # 开始仿真
     for t in range(T):
+        t1 = time.time()
         Environment.step()
+        t2 = time.time()
+        print(t2-t1)
+
         img = Environment.render()
         print(img.shape)
         plt.imshow(img)
