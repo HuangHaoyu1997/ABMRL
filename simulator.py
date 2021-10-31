@@ -11,15 +11,15 @@ from grid import *
 import time
 class env:
     def __init__(self) -> None:
-        self.map_size = [150,150]
-        self.init_pop = 50 # 初始人口,500
+        self.map_size = [100,100]
+        self.init_pop = 25 # 初始人口,500
         self.max_pop = 4000 # 人口上限,6000
         self.max_income = 5000 # 最高收入
         self.r = 0.005 # 收入增速
         self.R = 0.005 # 地价增速
         self.D = 0.1 # 地价折旧率
-        self.c1 = 1.0 # 内部经济压力权重
-        self.c2 = 1.0 # 内部社会压力权重
+        self.c1 = 1e-3 # 内部经济压力权重
+        self.c2 = 1e-3 # 内部社会压力权重
         self.ws = 1.0 # 外部压力权重
         self.wg = 1.0 # 内部压力权重
         self.a = 0.5 # 更新地价的权重
@@ -72,11 +72,12 @@ class env:
             tt += (t2-t1)
         print(tt)
 
-        
         self.update_income()
         print('update income done')
         self.update_value()
         print('update value done')
+        self.gen_agent(N=15)
+        print('Gen Agent Done')
         return None
 
     def update_income(self):
@@ -92,10 +93,10 @@ class env:
             income = a.update_income(self.r_work[a_work], self.max_income)
             self.income_list.append(income)
         max_income = np.max(self.income_list)
-        
         # 更新智能体的阶层、视域和权重
-        for a in self.agent_pool:
-            print(a)
+        key = list(self.agent_pool.keys())
+        for k in key:
+            a = self.agent_pool[k]
             a.def_class(max_income)
         
         # 更新各阶层收入取值范围
@@ -104,8 +105,6 @@ class env:
                                 [0.35,0.5],
                                 [0.5,0.75],
                                 [0.75,1.0]]) * max_income
-
-
 
     def cal_in_pressure(self, ID, xy):
         '''
@@ -122,7 +121,7 @@ class env:
         price = self.grid.val_map[x,y] # 所占土地地价
         P = self.neighbor(xy) # 邻里平均经济状况
         S = self.c1 * np.abs(income-price) + self.c2 * np.abs(income-P)
-        # print('income,',income,P)
+        # print('income,',income,price,P,S)
         return S
 
     def is_agent(self,xy):
@@ -257,7 +256,7 @@ class env:
         G = self.cal_out_pressure(xy, work_xy, weight).sum() # 外部居住环境吸引力
         S = self.cal_in_pressure(ID, xy) # ID智能体在xy位置的内部压力
         LocationEffect = self.wg*G + self.ws*(1-S) + 0.1*np.random.rand()
-        # print("LE:",S)
+        # print("内部压力:",S)
         return LocationEffect 
 
     def move(self,ID):
@@ -290,7 +289,7 @@ class env:
                     id = self.is_agent([x+off_x,y+off_y])
                     if id <= 999: # 空地
                         L_E = self.location_effect(ID,[x+off_x,y+off_y]) # ID智能体在[x+off_x,y+off_y]位置的区位效应
-                        # print(L_E)
+                        # print('Location Effect:',L_E)
                         le.append(L_E)
                         is_occupied.append([x+off_x,y+off_y])
         max_le = np.max(le)
@@ -298,7 +297,8 @@ class env:
         if AW >= self.WT: # 超过迁居阈值
             # print(le)
             prob = self.softmax(le)
-            destination = np.random.choice(list(range(len(le))),p=prob)
+            print('number of candidate:',len(le))
+            destination = np.random.choice(np.arange(len(le)),p=prob)
             destination_xy = is_occupied[destination]
             xx,yy = destination_xy
             self.grid.use_map[xx,yy] = ID # 新位置
@@ -311,6 +311,7 @@ class env:
     def softmax(self,x):
         '''softmax函数'''
         x = np.array(x)
+        # print('分母：',x.mean(),np.exp(x).sum())
         xx = np.exp(x)/(np.exp(x).sum())
         return xx
 
@@ -417,7 +418,7 @@ class env:
         根据ID找到Agent的阶层
         在新画布上区分出agent的阶层
         '''
-        new_figure = np.zeros(self.map_size[0],self.map_size[1],3)
+        new_figure = np.zeros((self.map_size[0],self.map_size[1],3))
         for id in list(self.agent_pool.keys()):
             x,y = self.agent_pool[id].coord
             clas = self.agent_pool[id].clas
