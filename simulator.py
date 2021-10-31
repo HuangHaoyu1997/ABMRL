@@ -23,7 +23,7 @@ class env:
         self.ws = 1.0 # 外部压力权重
         self.wg = 1.0 # 内部压力权重
         self.a = 0.5 # 更新地价的权重
-        self.move_step = 10 # 在周围[50,50]范围内计算候选迁居地块
+        self.move_step = 5 # 在周围[50,50]范围内计算候选迁居地块,move_step是半边长
 
         self.class_ratio = np.array([0.1,0.2,0.4,0.2,0.1]) # 低,中低,中,中高,高
         # 各个阶层的初始收入上下限，需要实时更新
@@ -53,7 +53,7 @@ class env:
         return None
         
     # @nb.jit()
-    def step(self):
+    def step(self,t):
         '''
         单步执行函数
         改变收入，更新地价，执行每个智能体的迁居判断
@@ -62,22 +62,26 @@ class env:
         '''
         
         shuffle_list = random.sample(list(self.agent_pool),len(self.agent_pool))
-        tt = 0
-        print(len(shuffle_list))
+        t1 = time.time()
+        print('---------step ',t,'---------')
+        print('number of agents:',len(shuffle_list))
         for idx in shuffle_list:
             agent = self.agent_pool[idx]
-            t1 = time.time()
             flag = self.move(agent.index) # 决定是否搬家，以及完成搬家操作
-            t2 = time.time()
-            tt += (t2-t1)
-        print(tt)
+        t2 = time.time()
+        print('move:%.3f'%(t2-t1))
 
         self.update_income()
-        print('update income done')
+        t3 = time.time()
+        print('update income:%.3f'%(t3-t2))
+
         self.update_value()
-        print('update value done')
-        self.gen_agent(N=15)
-        print('Gen Agent Done')
+        t4 = time.time()
+        print('update value:%.3f'%(t4-t3))
+
+        self.gen_agent(N=10)
+        t5 = time.time()
+        print('generate agent:%.3f'%(t5-t4))
         return None
 
     def update_income(self):
@@ -154,8 +158,8 @@ class env:
                     elif id < 1000: # 1000以下的id代表空地
                         sum.append(self.grid.val_map[x+off_x,y+off_y]) # 地价
         return np.mean(sum)
-
-    def occupation(self,xy,offset=10):
+    @nb.jit()
+    def occupation(self,xy,offset=5):
         '''
         计算邻域内被占据的格点数（已出租房屋）占比
         总地块数量要排除不能访问的地块
@@ -182,7 +186,7 @@ class env:
         (0,-1),         (0,1),
         (1,-1),(1,0),(1,1))
         '''
-        x_offset,y_offset = offset
+        x_offset, y_offset = offset
         dir = []
         for x in range(-x_offset,x_offset):
             for y in range(-y_offset,y_offset):
@@ -191,7 +195,7 @@ class env:
             dir.pop(int(0.5*2*x_offset*2*y_offset+y_offset)) # 刨除(0,0)点
 
         return dir
-
+    @nb.jit()
     def neighbor_value(self,xy,offset=10):
         '''
         计算周围土地的价值
@@ -200,12 +204,20 @@ class env:
         '''
         x,y = xy
         dir = self.meshgrid(offset=[offset,offset])
-        n_value = []
+        value,count = 0,0
+        # n_value = []
         for off_x,off_y in dir:
-            if ((x+off_x) >= 0) and ((x+off_x)<self.map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<self.map_size[1]): # 不越界
-                if self.grid.use_map[x+off_x,y+off_y] >= 0: # 能访问
-                    n_value.append(self.grid.val_map[x+off_x,y+off_y])
-        return n_value, np.mean(n_value)
+            if ((x+off_x) >= 0)              and \
+                ((x+off_x)<self.map_size[0]) and \
+                ((y+off_y) >= 0)             and \
+                ((y+off_y)<self.map_size[1]) and \
+                (self.grid.use_map[x+off_x,y+off_y] >= 0): # 不越界,能访问
+                
+                value += self.grid.val_map[x+off_x,y+off_y]
+                count += 1
+                # n_value.append(self.grid.val_map[x+off_x,y+off_y])
+
+        return value/count # n_value, np.mean(n_value)
 
     def cal_out_pressure(self, xy, work_xy, weight):
         '''
@@ -297,7 +309,7 @@ class env:
         if AW >= self.WT: # 超过迁居阈值
             # print(le)
             prob = self.softmax(le)
-            print('number of candidate:',len(le))
+            # print('number of candidate:',len(le))
             destination = np.random.choice(np.arange(len(le)),p=prob)
             destination_xy = is_occupied[destination]
             xx,yy = destination_xy
@@ -314,7 +326,8 @@ class env:
         # print('分母：',x.mean(),np.exp(x).sum())
         xx = np.exp(x)/(np.exp(x).sum())
         return xx
-
+    
+    @nb.jit()
     def update_value(self):
         '''
         改变土地价值
@@ -366,15 +379,19 @@ class env:
         for x in x_shuffle:
             for y in y_shuffle:
                 if self.grid.use_map[x,y] >= 0: # 可访问地块
+                    t1 = time.time()
                     history_value = self.grid.val_map[x,y]
-                    _, neighbor_value = self.neighbor_value([x,y])
-                    neighbor_occupy = self.occupation([x,y])
+                    neighbor_value = self.neighbor_value([x,y],offset=self.move_step)
+                    t2 = time.time()
+                    neighbor_occupy = self.occupation([x,y],offset=self.move_step) # 计算邻域已被占据的格点数，offset=10
+                    t3 = time.time()
                     if neighbor_occupy >= 0.8 and neighbor_occupy < 1:      factor = 1.10
                     elif neighbor_occupy >= 0.6 and neighbor_occupy < 0.8:  factor = 1.05
                     elif neighbor_occupy >= 0.4 and neighbor_occupy < 0.6:  factor = 1.00
                     elif neighbor_occupy >= 0.2 and neighbor_occupy < 0.4:  factor = 0.95
                     elif neighbor_occupy >= 0.0 and neighbor_occupy < 0.2:  factor = 0.90
-
+                    t4 = time.time()
+                    print('%.7f,%.7f,%.7f'%((t2-t1)*1000000.,(t3-t2)*1000000.,(t4-t3)*1000000.))
                     new_value = factor * (0.5*history_value + 0.5*neighbor_value)
                     self.grid.val_map[x,y] = new_value
 
@@ -418,7 +435,7 @@ class env:
         根据ID找到Agent的阶层
         在新画布上区分出agent的阶层
         '''
-        new_figure = np.zeros((self.map_size[0],self.map_size[1],3))
+        new_figure = np.zeros((self.map_size[0],self.map_size[1],3),dtype=np.uint8)
         for id in list(self.agent_pool.keys()):
             x,y = self.agent_pool[id].coord
             clas = self.agent_pool[id].clas
@@ -444,12 +461,11 @@ if __name__ == '__main__':
     # 开始仿真
     for t in range(T):
         t1 = time.time()
-        Environment.step()
+        Environment.step(t)
         t2 = time.time()
-        print(t2-t1)
+        print('total time:%.3f\n'%(t2-t1))
 
         img = Environment.render()
-        print(img.shape)
         plt.imshow(img)
 
 
