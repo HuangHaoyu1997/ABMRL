@@ -128,36 +128,9 @@ class env:
         # print('income,',income,price,P,S)
         return S
 
-    def is_agent(self,xy):
-        '''
-        判断当前地块是空地还是被智能体占据
-        ID > 999是ID号
-        ID = 0是空地
-        '''
-        x,y = xy
-        ID = self.grid.use_map[x,y]
-        if ID > 999:   return ID
-        elif ID < 999: return 0
+    
 
-    def neighbor(self,xy,offset=5):
-        '''
-        计算邻里平均经济状况
-        也就是xy周围一定范围内的土地/智能体的价值之平均
-        若地块空闲，则计算地价，若地块有人居住，则计算智能体收入
-        
-        '''
-        x,y = xy
-        dir = self.meshgrid(offset=[offset,offset])
-        sum = []
-        for off_x,off_y in dir:
-            if ((x+off_x) >= 0) and ((x+off_x)<self.map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<self.map_size[1]): # 不越界
-                if self.grid.use_map[x+off_x,y+off_y] >= 0: # 能访问
-                    id = self.is_agent([x+off_x,y+off_y]) # 查找该地块上有没有人居住
-                    if id >= 1000: # 1000以上的id代表agent
-                        sum.append(self.agent_pool[id].income) # 收入
-                    elif id < 1000: # 1000以下的id代表空地
-                        sum.append(self.grid.val_map[x+off_x,y+off_y]) # 地价
-        return np.mean(sum)
+
     @nb.jit()
     def occupation(self,xy,offset=5):
         '''
@@ -179,22 +152,7 @@ class env:
 
         
     
-    def meshgrid(self,offset=[10,10],pop=True):
-        '''
-        生成类似于如下的矩阵
-        ((-1,-1),(-1,0),(-1,1),
-        (0,-1),         (0,1),
-        (1,-1),(1,0),(1,1))
-        '''
-        x_offset, y_offset = offset
-        dir = []
-        for x in range(-x_offset,x_offset):
-            for y in range(-y_offset,y_offset):
-                dir.append([x,y])
-        if pop:
-            dir.pop(int(0.5*2*x_offset*2*y_offset+y_offset)) # 刨除(0,0)点
 
-        return dir
     @nb.jit()
     def neighbor_value(self,xy,offset=10):
         '''
@@ -451,6 +409,54 @@ class env:
             new_figure[x,y,:] = [50,170,220] # 标注地铁站
         
         return new_figure
+
+def is_agent(xy,use_map):
+    '''
+    判断当前地块是空地还是被智能体占据
+    ID > 999是ID号
+    ID = 0是空地
+    '''
+    x,y = xy
+    ID = use_map[x,y]
+    if ID > 999:   return ID
+    elif ID < 999: return 0
+
+def meshgrid(offset=[10,10],pop=True):
+    '''
+    生成类似于如下的矩阵
+    ((-1,-1),(-1,0),(-1,1),
+    (0,-1),         (0,1),
+    (1,-1),(1,0),(1,1))
+    '''
+    x_offset, y_offset = offset
+    dir = []
+    for x in range(-x_offset,x_offset):
+        for y in range(-y_offset,y_offset):
+            dir.append([x,y])
+    if pop:
+        dir.pop(int(0.5*2*x_offset*2*y_offset+y_offset)) # 刨除(0,0)点
+
+    return dir
+
+def neighbor(xy,map_size,val_map,use_map,agent_pool,offset=5):
+    '''
+    计算邻里平均经济状况
+    也就是xy周围一定范围内的土地/智能体的价值之平均
+    若地块空闲，则计算地价，若地块有人居住，则计算智能体收入
+    
+    '''
+    x,y = xy
+    dir = meshgrid(offset=[offset,offset])
+    sum = []
+    for off_x, off_y in dir:
+        if ((x+off_x) >= 0) and ((x+off_x)<map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<map_size[1]): # 不越界
+            if use_map[x+off_x,y+off_y] >= 0: # 能访问
+                id = is_agent([x+off_x,y+off_y]) # 查找该地块上有没有人居住
+                if id >= 1000: # 1000以上的id代表agent
+                    sum.append(agent_pool[id].income) # 收入
+                elif id < 1000: # 1000以下的id代表空地
+                    sum.append(val_map[x+off_x,y+off_y]) # 地价
+    return np.mean(sum)
 
 
 if __name__ == '__main__':
