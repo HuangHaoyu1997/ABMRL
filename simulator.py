@@ -142,9 +142,7 @@ def nei_value(xy,use_map,val_map,map_size,offset=10):
     output：地价list和均值
     '''
     x,y = xy
-    print(type(xy),type(use_map),type(val_map),type(map_size))
-    use_map = use_map.tolist()
-    val_map = val_map.tolist()
+    
     t1 = time.time()
     # dir = meshG(offset=[offset,offset])
     dir = meshgrid.meshgrid(offset=[offset,offset])
@@ -162,7 +160,7 @@ def nei_value(xy,use_map,val_map,map_size,offset=10):
             value += val_map[x+off_x][y+off_y]
             count += 1
             # n_value.append(self.grid.val_map[x+off_x,y+off_y])
-
+    print(type(count),type(value))
     return value/count # n_value, np.mean(n_value)
 
 class env:
@@ -428,19 +426,21 @@ class env:
                 if self.grid.use_map[x,y] >= 0: # 可访问地块
                     t1 = time.time()
                     history_value = self.grid.val_map[x,y]
-                    '''
+                    
                     n_value = nei_value([x,y],
                                             self.grid.use_map,
                                             self.grid.val_map,
                                             self.map_size,
                                             offset=self.move_step)
-                    '''
                     
+                    '''
                     n_value = neighbor_value.neighbor_value([x,y],
                                             self.grid.use_map.tolist(),
                                             self.grid.val_map.tolist(),
                                             self.map_size,
                                             offset=self.move_step)
+                    '''
+                    
 
                     t2 = time.time()
                     neighbor_occupy = self.occupation([x,y],offset=self.move_step) # 计算邻域已被占据的格点数，offset=10
@@ -451,7 +451,7 @@ class env:
                     elif neighbor_occupy >= 0.2 and neighbor_occupy < 0.4:  factor = 0.95
                     elif neighbor_occupy >= 0.0 and neighbor_occupy < 0.2:  factor = 0.90
                     t4 = time.time()
-                    print('%.7f,%.7f,%.7f'%((t2-t1)*1000000.,(t3-t2)*1000000.,(t4-t3)*1000000.))
+                    print('%.10f,%.10f,%.10f'%((t2-t1)*1000000.,(t3-t2)*1000000.,(t4-t3)*1000000.))
                     new_value = factor * (0.5*history_value + 0.5*n_value)
                     self.grid.val_map[x,y] = new_value
 

@@ -28,7 +28,7 @@ def neighbor(xy,map_size,val_map,use_map,agent_pool,offset=5):
             dir.append([x,y])
     dir.pop(int(0.5*2*x_offset*2*y_offset+y_offset)) # 刨除(0,0)点
     
-    # dir = meshgrid(offset=[offset,offset])
+    
     sum = []
     for off_x, off_y in dir:
         if ((x+off_x) >= 0) and ((x+off_x)<map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<map_size[1]): # 不越界
