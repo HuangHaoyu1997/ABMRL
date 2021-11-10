@@ -10,19 +10,28 @@ from agent import *
 from grid import *
 import time
 from neighbor import neighbor
+import pyximport
+pyximport.install()
+import is_ag
+import meshgrid
+import neighbor_value
+
 
 def is_agent(xy,use_map):
-    '''
-    判断当前地块是空地还是被智能体占据
-    ID > 999是ID号
-    ID = 0是空地
-    '''
+    
+    # 判断当前地块是空地还是被智能体占据
+    # ID > 999是ID号
+    # ID = 0是空地
+    
     x,y = xy
-    ID = use_map[x,y]
+    # um = use_map.tolist()
+    
+    ID = float(use_map[x,y])
+    # print(use_map[x,y],um[x][y])
     if ID > 999:   return ID
     elif ID < 999: return 0
 
-def meshgrid(offset=[10,10],pop=True):
+def meshG(offset=[10,10],pop=1):
     '''
     生成类似于如下的矩阵
     ((-1,-1),(-1,0),(-1,1),
@@ -34,7 +43,7 @@ def meshgrid(offset=[10,10],pop=True):
     for x in range(-x_offset,x_offset):
         for y in range(-y_offset,y_offset):
             dir.append([x,y])
-    if pop:
+    if pop==1:
         dir.pop(int(0.5*2*x_offset*2*y_offset+y_offset)) # 刨除(0,0)点
 
     return dir
@@ -126,14 +135,21 @@ def cal_in_pressure(ID, xy, agent_pool, val_map, use_map, map_size, c1, c2):
     # print('income,',income,price,P,S)
     return S
 
-def neighbor_value(xy,use_map,val_map,map_size,offset=10):
+def nei_value(xy,use_map,val_map,map_size,offset=10):
     '''
     计算周围土地的价值
     input：xy坐标
     output：地价list和均值
     '''
     x,y = xy
-    dir = meshgrid(offset=[offset,offset])
+    print(type(xy),type(use_map),type(val_map),type(map_size))
+    use_map = use_map.tolist()
+    val_map = val_map.tolist()
+    t1 = time.time()
+    # dir = meshG(offset=[offset,offset])
+    dir = meshgrid.meshgrid(offset=[offset,offset])
+    # if (time.time()-t1)>0: print(time.time()-t1)
+
     value,count = 0,0
     # n_value = []
     for off_x,off_y in dir:
@@ -141,9 +157,9 @@ def neighbor_value(xy,use_map,val_map,map_size,offset=10):
             ((x+off_x)<map_size[0]) and \
             ((y+off_y) >= 0)        and \
             ((y+off_y)<map_size[1]) and \
-            (use_map[x+off_x,y+off_y] >= 0): # 不越界,能访问
+            (use_map[x+off_x][y+off_y] >= 0): # 不越界,能访问
             
-            value += val_map[x+off_x,y+off_y]
+            value += val_map[x+off_x][y+off_y]
             count += 1
             # n_value.append(self.grid.val_map[x+off_x,y+off_y])
 
@@ -259,7 +275,10 @@ class env:
         output：已占据格点数/总格点数
         '''
         x,y = xy
-        dir = meshgrid(offset=[offset,offset])
+        # t1 = time.time()
+        dir = meshgrid.meshgrid(offset=[offset,offset])
+        # if (time.time()-t1)>0: print(time.time()-t1)
+
         n_occupied, n_total = 0, 0
         for off_x,off_y in dir:
             if ((x+off_x) >= 0) and ((x+off_x)<self.map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<self.map_size[1]): # 不越界
@@ -286,7 +305,11 @@ class env:
         '''
         xy = self.agent_pool[ID].coord
         x,y = xy
-        dir = meshgrid(offset=[self.move_step, self.move_step])
+        # t1 = time.time()
+        # dir = meshG(offset=[self.move_step, self.move_step])
+        dir = meshgrid.meshgrid(offset=[self.move_step, self.move_step])
+        # if (time.time()-t1)>0: print(time.time()-t1)
+
         is_occupied = []
         le = []
         for off_x,off_y in dir:
@@ -296,7 +319,11 @@ class env:
                 ((y+off_y)<self.map_size[1]): # 不越界
 
                 if self.grid.use_map[x+off_x,y+off_y] >= 0: # 是可用地块
-                    id = is_agent([x+off_x,y+off_y],self.grid.use_map)
+                    t1 = time.time()
+                    # id = is_agent([x+off_x,y+off_y],self.grid.use_map)
+                    id = is_ag.is_a([x+off_x,y+off_y],self.grid.use_map.tolist())
+                    # if (time.time()-t1)>0: print(time.time()-t1)
+                    
                     if id <= 999: # 空地
                         L_E = location_effect(ID,
                                             [x+off_x,y+off_y],
@@ -401,11 +428,20 @@ class env:
                 if self.grid.use_map[x,y] >= 0: # 可访问地块
                     t1 = time.time()
                     history_value = self.grid.val_map[x,y]
-                    n_value = neighbor_value([x,y],
+                    '''
+                    n_value = nei_value([x,y],
                                             self.grid.use_map,
                                             self.grid.val_map,
                                             self.map_size,
                                             offset=self.move_step)
+                    '''
+                    
+                    n_value = neighbor_value.neighbor_value([x,y],
+                                            self.grid.use_map.tolist(),
+                                            self.grid.val_map.tolist(),
+                                            self.map_size,
+                                            offset=self.move_step)
+
                     t2 = time.time()
                     neighbor_occupy = self.occupation([x,y],offset=self.move_step) # 计算邻域已被占据的格点数，offset=10
                     t3 = time.time()
@@ -415,7 +451,7 @@ class env:
                     elif neighbor_occupy >= 0.2 and neighbor_occupy < 0.4:  factor = 0.95
                     elif neighbor_occupy >= 0.0 and neighbor_occupy < 0.2:  factor = 0.90
                     t4 = time.time()
-                    # print('%.7f,%.7f,%.7f'%((t2-t1)*1000000.,(t3-t2)*1000000.,(t4-t3)*1000000.))
+                    print('%.7f,%.7f,%.7f'%((t2-t1)*1000000.,(t3-t2)*1000000.,(t4-t3)*1000000.))
                     new_value = factor * (0.5*history_value + 0.5*n_value)
                     self.grid.val_map[x,y] = new_value
 

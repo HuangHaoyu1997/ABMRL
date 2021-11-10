@@ -9,6 +9,7 @@ cdef np.ndarray[np.float32_t, ndim=2] _naive_dot(np.ndarray[np.float32_t, ndim=2
     cdef np.ndarray[np.float32_t, ndim=2] c
     cdef int n, p, m
     cdef np.float32_t s
+    
     if a.shape[1] != b.shape[0]:
         raise ValueError('shape not matched')
     n, p, m = a.shape[0], a.shape[1], b.shape[1]
@@ -23,3 +24,4 @@ cdef np.ndarray[np.float32_t, ndim=2] _naive_dot(np.ndarray[np.float32_t, ndim=2
 
 def naive_dot(a, b):
     return _naive_dot(a, b)
+
