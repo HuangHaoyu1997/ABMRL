@@ -2,15 +2,15 @@ import numpy as np
 from numpy.core.defchararray import index
 
 class Agent:
-    def __init__(self, index, coord, income, WT, work_id) -> None:
+    def __init__(self, index, coord, income, WT, work_id, max_income) -> None:
         self.index = index
         self.coord = coord
         self.income = income # 初始income[100,1000]
         self.WT = WT # 迁居阈值
         self.work_id = work_id # 所属企业
-        self.clas, self.RF, self.weight = self.def_class(max_income=1000) # 确定阶层,视域和权重
+        self.clas, self.weight = self.def_class(max_income=max_income) # 确定阶层,视域和权重
         
-    def update_income(self, r , max_income):
+    def update_income(self, r, max_income):
         '''
         更新收入
         r：增长率
@@ -35,13 +35,13 @@ class Agent:
         '''
         IR = self.income / max_income
         if IR>=0 and IR<0.175:
-            return 'Low', 2, np.array([0.4,0.5,0.1]) # np.array([0.3,0.6,0.05,0,0.05])
+            return 'Low', np.array([0.4,0.5,0.1]) # np.array([0.3,0.6,0.05,0,0.05])
         elif IR>=0.175 and IR<0.35:
-            return 'MediumLow', 3, np.array([0.4,0.4,0.2]) # np.array([0.25,0.45,0.15,0.05,0.1])
+            return 'MediumLow', np.array([0.4,0.4,0.2]) # np.array([0.25,0.45,0.15,0.05,0.1])
         elif IR>=0.35 and IR<0.5:
-            return 'Medium', 4, np.array([0.3,0.4,0.3]) # np.array([0.1,0.1,0.4,0.3,0.1])
+            return 'Medium', np.array([0.3,0.4,0.3]) # np.array([0.1,0.1,0.4,0.3,0.1])
         elif IR>=0.5 and IR<0.75:
-            return 'MediumHigh', 5, np.array([0.2,0.4,0.4]) # np.array([0.05,0.05,0.4,0.4,0.1])
+            return 'MediumHigh', np.array([0.2,0.4,0.4]) # np.array([0.05,0.05,0.4,0.4,0.1])
         elif IR>=0.75 and IR<=1:
-            return 'High', 6, np.array([0.2,0.2,0.6]) # np.array([0.05,0,0.45,0.45,0.05])
+            return 'High', np.array([0.2,0.2,0.6]) # np.array([0.05,0,0.45,0.45,0.05])
     

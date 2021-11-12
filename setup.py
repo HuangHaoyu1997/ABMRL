@@ -2,7 +2,7 @@
 from distutils.core import setup, Extension
 from os import name
 from Cython.Build import cythonize
-# import numpy
+import numpy
 
 setup(
     name='neighbor_value',

@@ -65,7 +65,7 @@ class Grid:
     '''
     def init_val_map(self):
         # 初始化地价
-        return np.random.randint(np.ones(self.map_size)*self.init_value)
+        return np.random.randint(np.ones(self.map_size)*self.init_value).tolist()
     
     def init_tra_map(self):
         # 基础设施周围具有较好的交通等级
@@ -124,6 +124,6 @@ class Grid:
         for xy in self.work_xy:
             x,y = xy
             use_map[x,y] = -2 # 工作地点不可占用
-        return use_map
+        return use_map.tolist()
     
     

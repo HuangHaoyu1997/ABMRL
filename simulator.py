@@ -15,7 +15,7 @@ pyximport.install()
 import is_ag
 import meshgrid
 import neighbor_value
-
+import neighbor_c
 
 def is_agent(xy,use_map):
     
@@ -26,7 +26,7 @@ def is_agent(xy,use_map):
     x,y = xy
     # um = use_map.tolist()
     
-    ID = float(use_map[x,y])
+    ID = float(use_map[x][y])
     # print(use_map[x,y],um[x][y])
     if ID > 999:   return ID
     elif ID < 999: return 0
@@ -110,7 +110,7 @@ def cal_out_pressure(xy, work_xy, tra_xy, val_map, weight):
 
     # 房价
     # 实际上外部吸引力与房价并非正比关系，而是对不同人群有不同影响，人们可能更偏好比当前收入稍好一点的房屋，但不喜欢房价高出很多的房屋
-    E_price = 0.001 * val_map[x,y] 
+    E_price = 0.001 * val_map[x][y] 
     return weight * np.array([E_tra,E_work,E_price])
 
 def cal_in_pressure(ID, xy, agent_pool, val_map, use_map, map_size, c1, c2):
@@ -125,12 +125,26 @@ def cal_in_pressure(ID, xy, agent_pool, val_map, use_map, map_size, c1, c2):
     '''
     x,y = xy
     income = agent_pool[ID].income
-    price = val_map[x,y] # 所占土地地价
+    price = val_map[x][y] # 所占土地地价
+    
+    
+    '''
     P = neighbor(xy,
-                map_size,
-                val_map,
-                use_map,
-                agent_pool) # 邻里平均经济状况
+                    map_size,
+                    val_map,
+                    use_map,
+                    agent_pool,
+                    offset=10) # 邻里平均经济状况
+    
+    
+    '''
+    P = neighbor_c.neighbor(xy,
+                    map_size,
+                    val_map,
+                    use_map,
+                    agent_pool,
+                    offset=10) # 邻里平均经济状况
+
     S = c1 * np.abs(income-price) + c2 * np.abs(income-P)
     # print('income,',income,price,P,S)
     return S
@@ -142,7 +156,6 @@ def nei_value(xy,use_map,val_map,map_size,offset=10):
     output：地价list和均值
     '''
     x,y = xy
-    
     t1 = time.time()
     # dir = meshG(offset=[offset,offset])
     dir = meshgrid.meshgrid(offset=[offset,offset])
@@ -160,13 +173,12 @@ def nei_value(xy,use_map,val_map,map_size,offset=10):
             value += val_map[x+off_x][y+off_y]
             count += 1
             # n_value.append(self.grid.val_map[x+off_x,y+off_y])
-    print(type(count),type(value))
     return value/count # n_value, np.mean(n_value)
 
 class env:
     def __init__(self) -> None:
         self.map_size = [100,100]
-        self.init_pop = 25 # 初始人口,500
+        self.init_pop = 100 # 初始人口,500
         self.max_pop = 4000 # 人口上限,6000
         self.max_income = 5000 # 最高收入
         self.r = 0.005 # 收入增速
@@ -188,7 +200,7 @@ class env:
                                 [350,500],   # 中
                                 [500,750],   # 中高
                                 [750,1000]]) # 高
-        self.WT = 0.15 # 迁居阈值
+        self.WT = 0.95 # 迁居阈值
         self.grid = Grid(map_size=self.map_size)
         self.work_income() # 为每个企业分配随机收入增速
         
@@ -219,9 +231,11 @@ class env:
         t1 = time.time()
         print('---------step ',t,'---------')
         print('number of agents:',len(shuffle_list))
+        move_count = 0
         for idx in shuffle_list:
             agent = self.agent_pool[idx]
             flag = self.move(agent.index) # 决定是否搬家，以及完成搬家操作
+            if flag is True: move_count += 1
         t2 = time.time()
         print('move:%.3f'%(t2-t1))
 
@@ -233,10 +247,10 @@ class env:
         t4 = time.time()
         print('update value:%.3f'%(t4-t3))
 
-        self.gen_agent(N=10)
+        self.gen_agent(N=20)
         t5 = time.time()
         print('generate agent:%.3f'%(t5-t4))
-        return None
+        return move_count
 
     def update_income(self):
         '''
@@ -263,6 +277,7 @@ class env:
                                 [0.35,0.5],
                                 [0.5,0.75],
                                 [0.75,1.0]]) * max_income
+        self.max_income = max_income
 
     # @nb.jit()
     def occupation(self,xy,offset=5):
@@ -280,9 +295,9 @@ class env:
         n_occupied, n_total = 0, 0
         for off_x,off_y in dir:
             if ((x+off_x) >= 0) and ((x+off_x)<self.map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<self.map_size[1]): # 不越界
-                if self.grid.use_map[x+off_x,y+off_y] >= 0: # 能访问
+                if self.grid.use_map[x+off_x][y+off_y] >= 0: # 能访问
                     n_total += 1
-                    if self.grid.use_map[x+off_x,y+off_y] >= 1000: # 1000以上的id代表agent
+                    if self.grid.use_map[x+off_x][y+off_y] >= 1000: # 1000以上的id代表agent
                         n_occupied += 1
         return n_occupied / n_total
 
@@ -316,10 +331,10 @@ class env:
                 ((y+off_y)>=0) and \
                 ((y+off_y)<self.map_size[1]): # 不越界
 
-                if self.grid.use_map[x+off_x,y+off_y] >= 0: # 是可用地块
+                if self.grid.use_map[x+off_x][y+off_y] >= 0: # 是可用地块
                     t1 = time.time()
                     # id = is_agent([x+off_x,y+off_y],self.grid.use_map)
-                    id = is_ag.is_a([x+off_x,y+off_y],self.grid.use_map.tolist())
+                    id = is_ag.is_a([x+off_x,y+off_y],self.grid.use_map)
                     # if (time.time()-t1)>0: print(time.time()-t1)
                     
                     if id <= 999: # 空地
@@ -358,8 +373,8 @@ class env:
             destination = np.random.choice(np.arange(len(le)),p=prob)
             destination_xy = is_occupied[destination]
             xx,yy = destination_xy
-            self.grid.use_map[xx,yy] = ID # 新位置
-            self.grid.use_map[x,y] = 0 # 原位置归0
+            self.grid.use_map[xx][yy] = ID # 新位置
+            self.grid.use_map[x][y] = 0 # 原位置归0
 
             return True
         else:
@@ -421,28 +436,35 @@ class env:
         x_shuffle = random.sample(list(range(self.map_size[0])),self.map_size[0])
         y_shuffle = random.sample(list(range(self.map_size[1])),self.map_size[1])
         # 随机顺序更新地价
+        t = [0.,0.,0.]
         for x in x_shuffle:
             for y in y_shuffle:
-                if self.grid.use_map[x,y] >= 0: # 可访问地块
+                if self.grid.use_map[x][y] >= 0: # 可访问地块
                     t1 = time.time()
-                    history_value = self.grid.val_map[x,y]
+                    history_value = self.grid.val_map[x][y]
                     
+                    '''
                     n_value = nei_value([x,y],
                                             self.grid.use_map,
                                             self.grid.val_map,
                                             self.map_size,
-                                            offset=self.move_step)
+                                            offset=10# self.move_step,
+                                            )
+                    
                     
                     '''
                     n_value = neighbor_value.neighbor_value([x,y],
-                                            self.grid.use_map.tolist(),
-                                            self.grid.val_map.tolist(),
+                                            self.grid.use_map,
+                                            self.grid.val_map,
                                             self.map_size,
-                                            offset=self.move_step)
-                    '''
+                                            offset=5# self.move_step
+                                            )
+                    
+                    
                     
 
                     t2 = time.time()
+                    
                     neighbor_occupy = self.occupation([x,y],offset=self.move_step) # 计算邻域已被占据的格点数，offset=10
                     t3 = time.time()
                     if neighbor_occupy >= 0.8 and neighbor_occupy < 1:      factor = 1.10
@@ -451,10 +473,14 @@ class env:
                     elif neighbor_occupy >= 0.2 and neighbor_occupy < 0.4:  factor = 0.95
                     elif neighbor_occupy >= 0.0 and neighbor_occupy < 0.2:  factor = 0.90
                     t4 = time.time()
-                    print('%.10f,%.10f,%.10f'%((t2-t1)*1000000.,(t3-t2)*1000000.,(t4-t3)*1000000.))
+                    
+                    t[0] += (t2-t1)
+                    t[1] += (t3-t2)
+                    t[2] += (t4-t3)
+                    # print('%.10f,%.10f,%.10f'%((t2-t1)*1e3,(t3-t2)*1e3,(t4-t3)*1e3))
                     new_value = factor * (0.5*history_value + 0.5*n_value)
-                    self.grid.val_map[x,y] = new_value
-
+                    self.grid.val_map[x][y] = new_value
+        print('total t:',t)
     def gen_agent(self, N):
         '''
         生成新智能体
@@ -476,17 +502,18 @@ class env:
                     x,y = xy
                 '''
                                 
-                idxs = np.argwhere(self.grid.use_map==0)
+                idxs = np.argwhere(np.array(self.grid.use_map)==0)
                 xy = random.choice(idxs)
                 x,y = xy
 
 
                 ID = self.pop_size + 1000                 # 用ID为智能体建立索引
-                self.grid.use_map[x,y] = ID               # 在use_map中更新智能体的ID
+                self.grid.use_map[x][y] = ID               # 在use_map中更新智能体的ID
                 l,h = self.income[i]                      # 各个阶层的初始收入上下限
                 income = np.random.randint(low=l, high=h) # 随机收入
                 work_id = random.choice(range(self.num_work)) # 随机分配一个企业
-                self.agent_pool[ID] = Agent(ID,xy,income,self.WT,work_id)
+                # print(ID,list(xy),income,self.WT,work_id)
+                self.agent_pool[ID] = Agent(ID,list(xy),income,self.WT,work_id,self.max_income)
                 self.pop_size += 1
 
     def render(self):
@@ -514,16 +541,16 @@ class env:
 
 
 if __name__ == '__main__':
-    T = 10 # 仿真步长
+    T = 100 # 仿真步长
     
     # 初始化模拟器
     Environment = env()
     # 开始仿真
     for t in range(T):
         t1 = time.time()
-        Environment.step(t)
+        move_count = Environment.step(t)
         t2 = time.time()
-        print('total time:%.3f\n'%(t2-t1))
+        print('total time:%.3f,move count:%d\n'%(t2-t1,move_count))
 
         img = Environment.render()
         plt.imshow(img)
