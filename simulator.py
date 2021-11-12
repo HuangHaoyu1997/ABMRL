@@ -367,8 +367,8 @@ class env:
         print(ID,xy,self.grid.use_map[x][y])
         if AW >= self.WT: # 超过迁居阈值
             # print('number of candidate:',len(le))
-            prob = self.softmax(le)
-            destination = np.random.choice(np.arange(len(le)),p=prob)
+            prob = self.softmax(location_effect_neighbor)
+            destination = np.random.choice(np.arange(len(location_effect_neighbor)),p=prob)
             destination_xy = is_occupied[destination]
             xx,yy = destination_xy
             self.grid.use_map[xx][yy] = ID # 新位置
