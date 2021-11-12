@@ -374,7 +374,7 @@ class env:
             self.grid.use_map[xx][yy] = ID # 新位置
             if x==xx and y==yy: print('true!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
             self.grid.use_map[x][y] = 0 # 原位置归0
-            print(ID,xy,destination_xy,self.grid.use_map[x][y],'\n')
+            print(ID,xy,destination_xy,self.grid.use_map[x][y],self.grid.use_map[xx][yy],'\n')
 
             return True
         else:
