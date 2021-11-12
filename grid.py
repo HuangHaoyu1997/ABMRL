@@ -117,13 +117,13 @@ class Grid:
     
     def init_use_map(self):
         # 2:智能体
-        use_map = np.zeros(self.map_size)
+        use_map = np.zeros(self.map_size).tolist()
         for xy in self.tra_xy:
             x,y = xy
-            use_map[x,y] = -1 # 地铁站点不可占用
+            use_map[x][y] = -1 # 地铁站点不可占用
         for xy in self.work_xy:
             x,y = xy
-            use_map[x,y] = -2 # 工作地点不可占用
-        return use_map.tolist()
+            use_map[x][y] = -2 # 工作地点不可占用
+        return use_map
     
     

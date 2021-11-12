@@ -237,19 +237,16 @@ class env:
             flag = self.move(agent.index) # 决定是否搬家，以及完成搬家操作
             if flag is True: move_count += 1
         t2 = time.time()
-        print('move:%.3f'%(t2-t1))
-
+        
         self.update_income()
         t3 = time.time()
-        print('update income:%.3f'%(t3-t2))
-
+        
         self.update_value()
         t4 = time.time()
-        print('update value:%.3f'%(t4-t3))
 
         self.gen_agent(N=20)
         t5 = time.time()
-        print('generate agent:%.3f'%(t5-t4))
+        print('move:%.3f,update income:%.3f,update value:%.3f,generate agent:%.3f'%(t2-t1,t3-t2,t4-t3,t5-t4))
         return move_count
 
     def update_income(self):
@@ -303,7 +300,7 @@ class env:
 
     def move(self,ID):
         '''
-        判断迁居阈值，选择迁居地
+        判断智能体ID是否满足迁居阈值，选择迁居地
 
         计算迁居意愿
         AW = U_best - U
@@ -316,7 +313,7 @@ class env:
         注意：当meshgrid很大时，计算location effect将极其耗费时间
         应该采用内部压力和外部
         '''
-        xy = self.agent_pool[ID].coord
+        xy = self.agent_pool[ID].coord # 取出当前智能体的位置坐标
         x,y = xy
         # t1 = time.time()
         # dir = meshG(offset=[self.move_step, self.move_step])
@@ -324,7 +321,7 @@ class env:
         # if (time.time()-t1)>0: print(time.time()-t1)
 
         is_occupied = []
-        le = []
+        location_effect_neighbor = []
         for off_x,off_y in dir:
             if ((x+off_x)>=0) and \
                 ((x+off_x)<self.map_size[0]) and \
@@ -332,7 +329,7 @@ class env:
                 ((y+off_y)<self.map_size[1]): # 不越界
 
                 if self.grid.use_map[x+off_x][y+off_y] >= 0: # 是可用地块
-                    t1 = time.time()
+                    # t1 = time.time()
                     # id = is_agent([x+off_x,y+off_y],self.grid.use_map)
                     id = is_ag.is_a([x+off_x,y+off_y],self.grid.use_map)
                     # if (time.time()-t1)>0: print(time.time()-t1)
@@ -351,9 +348,10 @@ class env:
                                             self.c1,
                                             self.c2) # ID智能体在[x+off_x,y+off_y]位置的区位效应
                         # print('Location Effect:',L_E)
-                        le.append(L_E)
+                        location_effect_neighbor.append(L_E)
                         is_occupied.append([x+off_x,y+off_y])
-        max_le = np.max(le)
+        # print(ID,len(le))
+        max_le = np.max(location_effect_neighbor)
         AW = max_le - location_effect(ID,
                                     xy,
                                     self.agent_pool,
@@ -366,15 +364,17 @@ class env:
                                     self.ws,
                                     self.c1,
                                     self.c2)
+        print(ID,xy,self.grid.use_map[x][y])
         if AW >= self.WT: # 超过迁居阈值
-            # print(le)
-            prob = self.softmax(le)
             # print('number of candidate:',len(le))
+            prob = self.softmax(le)
             destination = np.random.choice(np.arange(len(le)),p=prob)
             destination_xy = is_occupied[destination]
             xx,yy = destination_xy
             self.grid.use_map[xx][yy] = ID # 新位置
+            if x==xx and y==yy: print('true!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
             self.grid.use_map[x][y] = 0 # 原位置归0
+            print(ID,xy,destination_xy,self.grid.use_map[x][y],'\n')
 
             return True
         else:
@@ -480,7 +480,7 @@ class env:
                     # print('%.10f,%.10f,%.10f'%((t2-t1)*1e3,(t3-t2)*1e3,(t4-t3)*1e3))
                     new_value = factor * (0.5*history_value + 0.5*n_value)
                     self.grid.val_map[x][y] = new_value
-        print('total t:',t)
+        # print('total t:',t)
     def gen_agent(self, N):
         '''
         生成新智能体
@@ -550,6 +550,7 @@ if __name__ == '__main__':
         t1 = time.time()
         move_count = Environment.step(t)
         t2 = time.time()
+        print((np.array(Environment.grid.use_map)==0).sum())
         print('total time:%.3f,move count:%d\n'%(t2-t1,move_count))
 
         img = Environment.render()
