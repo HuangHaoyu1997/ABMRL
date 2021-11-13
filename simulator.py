@@ -244,7 +244,8 @@ class env:
         self.update_value()
         t4 = time.time()
 
-        self.gen_agent(N=20)
+        if len(self.agent_pool) < self.max_pop:
+            self.gen_agent(N=20)
         t5 = time.time()
         print('move:%.3f,update income:%.3f,update value:%.3f,generate agent:%.3f'%(t2-t1,t3-t2,t4-t3,t5-t4))
         return move_count
@@ -350,32 +351,36 @@ class env:
                         # print('Location Effect:',L_E)
                         location_effect_neighbor.append(L_E)
                         is_occupied.append([x+off_x,y+off_y])
-        # print(ID,len(le))
-        max_le = np.max(location_effect_neighbor)
-        AW = max_le - location_effect(ID,
-                                    xy,
-                                    self.agent_pool,
-                                    self.grid.work_xy,
-                                    self.grid.tra_xy,
-                                    self.grid.val_map,
-                                    self.grid.use_map,
-                                    self.map_size,
-                                    self.wg,
-                                    self.ws,
-                                    self.c1,
-                                    self.c2)
-        print(ID,xy,self.grid.use_map[x][y])
-        if AW >= self.WT: # 超过迁居阈值
-            # print('number of candidate:',len(le))
-            prob = self.softmax(location_effect_neighbor)
-            destination = np.random.choice(np.arange(len(location_effect_neighbor)),p=prob)
-            destination_xy = is_occupied[destination]
-            xx,yy = destination_xy
-            self.grid.use_map[xx][yy] = ID # 新位置
-            self.grid.use_map[x][y] = 0 # 原位置归0
-            print(ID,xy,destination_xy,self.grid.use_map[x][y],self.grid.use_map[xx][yy],'\n')
+        # print(ID,len(location_effect_neighbor))
+        if len(location_effect_neighbor) > 0:
+            max_le = np.max(location_effect_neighbor)
+            AW = max_le - location_effect(ID,
+                                        xy,
+                                        self.agent_pool,
+                                        self.grid.work_xy,
+                                        self.grid.tra_xy,
+                                        self.grid.val_map,
+                                        self.grid.use_map,
+                                        self.map_size,
+                                        self.wg,
+                                        self.ws,
+                                        self.c1,
+                                        self.c2)
+            # print(ID,xy,self.grid.use_map[x][y])
+            if AW >= self.WT: # 超过迁居阈值
+                # print('number of candidate:',len(le))
+                prob = self.softmax(location_effect_neighbor)
+                destination = np.random.choice(np.arange(len(location_effect_neighbor)),p=prob)
+                destination_xy = is_occupied[destination]
+                xx,yy = destination_xy
+                self.grid.use_map[xx][yy] = ID # 新位置
+                self.grid.use_map[x][y] = 0 # 原位置归0
+                self.agent_pool[ID].coord = [xx,yy]
+                # print(ID,xy,destination_xy,self.grid.use_map[x][y],self.grid.use_map[xx][yy],'\n')
 
-            return True
+                return True
+            else:
+                return False
         else:
             return False
 
@@ -549,7 +554,7 @@ if __name__ == '__main__':
         t1 = time.time()
         move_count = Environment.step(t)
         t2 = time.time()
-        print((np.array(Environment.grid.use_map)==0).sum())
+        # print('available land:',(np.array(Environment.grid.use_map)==0).sum())
         print('total time:%.3f,move count:%d\n'%(t2-t1,move_count))
 
         img = Environment.render()
