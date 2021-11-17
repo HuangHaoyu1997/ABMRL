@@ -526,7 +526,7 @@ class env:
         根据ID找到Agent的阶层
         在新画布上区分出agent的阶层
         '''
-        new_figure = np.zeros((self.map_size[0],self.map_size[1],3),dtype=np.uint8)
+        new_figure = np.ones((self.map_size[0],self.map_size[1],3),dtype=np.uint8)
         for id in list(self.agent_pool.keys()):
             x,y = self.agent_pool[id].coord
             clas = self.agent_pool[id].clas
@@ -558,6 +558,6 @@ if __name__ == '__main__':
         print('total time:%.3f,move count:%d\n'%(t2-t1,move_count))
 
         img = Environment.render()
-        plt.imshow(img)
+        plt.imsave('./img/'+str(t)+'.png',img)
 
 
