@@ -177,7 +177,7 @@ def nei_value(xy,use_map,val_map,map_size,offset=10):
 
 class env:
     def __init__(self) -> None:
-        self.map_size = [100,100]
+        self.map_size = [400,400]
         self.init_pop = 100 # 初始人口,500
         self.max_pop = 4000 # 人口上限,6000
         self.max_income = 5000 # 最高收入
@@ -189,7 +189,7 @@ class env:
         self.ws = 1.0 # 外部压力权重
         self.wg = 1.0 # 内部压力权重
         self.a = 0.5 # 更新地价的权重
-        self.move_step = 5 # 在周围[50,50]范围内计算候选迁居地块,move_step是半边长
+        self.move_step = 2 # 在周围[10,10]范围内计算候选迁居地块,move_step是半边长
 
         self.class_ratio = np.array([0.1,0.2,0.4,0.2,0.1]) # 低,中低,中,中高,高
         # 各个阶层的初始收入上下限，需要实时更新
@@ -446,23 +446,23 @@ class env:
                 if self.grid.use_map[x][y] >= 0: # 可访问地块
                     t1 = time.time()
                     history_value = self.grid.val_map[x][y]
-                    
-                    '''
                     n_value = nei_value([x,y],
                                             self.grid.use_map,
                                             self.grid.val_map,
                                             self.map_size,
                                             offset=10# self.move_step,
                                             )
-                    
-                    
                     '''
+                    
+                    
                     n_value = neighbor_value.neighbor_value([x,y],
                                             self.grid.use_map,
                                             self.grid.val_map,
                                             self.map_size,
                                             offset=5# self.move_step
                                             )
+                    '''
+                    
                     
                     
                     
@@ -531,11 +531,11 @@ class env:
             x,y = self.agent_pool[id].coord
             clas = self.agent_pool[id].clas
             # 根据阶层上色
-            if clas == 'Low':          new_figure[x,y,:] = np.array([220,220,220])
-            elif clas == 'MediumLow':  new_figure[x,y,:] = np.array([170,170,170])
+            if clas == 'Low':          new_figure[x,y,:] = np.array([0,0,128]) # navy blue
+            elif clas == 'MediumLow':  new_figure[x,y,:] = np.array([100,149,237]) #cornflowerblue
             elif clas == 'Medium':     new_figure[x,y,:] = np.array([120,120,120])
             elif clas == 'MediumHigh': new_figure[x,y,:] = np.array([70,70,70])
-            elif clas == 'High':       new_figure[x,y,:] = np.array([20,20,20])
+            elif clas == 'High':       new_figure[x,y,:] = np.array([25,20,20])
         for x,y in self.grid.work_xy:
             new_figure[x,y,:] = [220,50,170] # 标注企业位置
         for x,y in self.grid.tra_xy:
