@@ -177,7 +177,7 @@ def nei_value(xy,use_map,val_map,map_size,offset=10):
 
 class env:
     def __init__(self) -> None:
-        self.map_size = [400,400]
+        self.map_size = [100,100]
         self.init_pop = 100 # 初始人口,500
         self.max_pop = 4000 # 人口上限,6000
         self.max_income = 5000 # 最高收入
@@ -526,20 +526,20 @@ class env:
         根据ID找到Agent的阶层
         在新画布上区分出agent的阶层
         '''
-        new_figure = np.ones((self.map_size[0],self.map_size[1],3),dtype=np.uint8)
+        new_figure = np.ones((self.map_size[0],self.map_size[1],3),dtype=np.uint8)*255
         for id in list(self.agent_pool.keys()):
             x,y = self.agent_pool[id].coord
             clas = self.agent_pool[id].clas
             # 根据阶层上色
             if clas == 'Low':          new_figure[x,y,:] = np.array([0,0,128]) # navy blue
             elif clas == 'MediumLow':  new_figure[x,y,:] = np.array([100,149,237]) #cornflowerblue
-            elif clas == 'Medium':     new_figure[x,y,:] = np.array([120,120,120])
-            elif clas == 'MediumHigh': new_figure[x,y,:] = np.array([70,70,70])
-            elif clas == 'High':       new_figure[x,y,:] = np.array([25,20,20])
+            elif clas == 'Medium':     new_figure[x,y,:] = np.array([46,139,87]) # seagreen
+            elif clas == 'MediumHigh': new_figure[x,y,:] = np.array([255,215,0]) # gold
+            elif clas == 'High':       new_figure[x,y,:] = np.array([255,48,48]) # firebrick1
         for x,y in self.grid.work_xy:
-            new_figure[x,y,:] = [220,50,170] # 标注企业位置
+            new_figure[x,y,:] = [255,0,255] # 标注企业位置;magenta
         for x,y in self.grid.tra_xy:
-            new_figure[x,y,:] = [50,170,220] # 标注地铁站
+            new_figure[x,y,:] = [0,255,255] # 标注地铁站;cyan
         
         return new_figure
 
