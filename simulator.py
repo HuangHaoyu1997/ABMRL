@@ -201,6 +201,7 @@ class env:
                                 [500,750],   # 中高
                                 [750,1000]]) # 高
         self.WT = 0.95 # 迁居阈值
+        
         self.grid = Grid(map_size=self.map_size)
         self.work_income() # 为每个企业分配随机收入增速
         
