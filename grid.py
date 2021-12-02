@@ -15,7 +15,7 @@ class Grid:
     def load_map(self):
         # 读入六环内地图
         self.BJ_map = cv2.imread('BJ_map1.jpg')
-        shape = 
+
 
 
 
