@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 
 class Grid:
     def __init__(self, map_size=[500,500]) -> None:
@@ -11,7 +12,17 @@ class Grid:
         self.map_size = map_size
         self.init_map()
     
+    def load_map(self):
+        # 读入六环内地图
+        self.BJ_map = cv2.imread('BJ_map1.jpg')
+        shape = 
+
+
+
     def init_map(self):
+        # 
+        
+
         # 初始化各图层
 
         # 基础设施
