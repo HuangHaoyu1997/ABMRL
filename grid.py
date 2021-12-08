@@ -1,5 +1,7 @@
 import numpy as np
 import cv2
+import pickle
+import matplotlib.pyplot as plt
 
 class Grid:
     def __init__(self, map_size=[500,500]) -> None:
@@ -9,13 +11,28 @@ class Grid:
         self.env_num = 5 # 自然资源[河流，山脉]的数量
         self.work_num = 20 # 企业的数量
         self.tra_num = 50 # 地铁站位置
-        self.map_size = map_size
+        
+        self.scale = 100 # 对原始地图的缩放系数
+        self.load_map()
+        self.scale_map()
         self.init_map()
+        
     
     def load_map(self):
-        # 读入六环内地图
-        self.BJ_map = cv2.imread('BJ_map1.jpg')
+        with open('BJ.pkl','rb') as f:
+            self.use_map_up = pickle.load(f)
+        
+        # print(self.use_map.min(),self.use_map.max())
 
+    
+    def scale_map(self):
+        size = np.round(np.array(self.use_map_up.shape) / self.scale) # 缩小后的尺寸
+        self.use_map = cv2.resize(self.use_map_up,(int(size[0]) ,int(size[1])))
+        self.use_map = np.array(self.use_map,dtype=np.int)
+        self.use_map -= 1
+        plt.imsave('BJ_scale.png',self.use_map)
+        self.map_size = self.use_map.shape
+        print(self.use_map.min(), self.use_map.max(), type(self.use_map[0,0]))
 
 
 
@@ -131,10 +148,14 @@ class Grid:
         use_map = np.zeros(self.map_size).tolist()
         for xy in self.tra_xy:
             x,y = xy
-            use_map[x][y] = -1 # 地铁站点不可占用
+            use_map[x][y] = -100 # 地铁站点不可占用
         for xy in self.work_xy:
             x,y = xy
-            use_map[x][y] = -2 # 工作地点不可占用
+            use_map[x][y] = -200 # 工作地点不可占用
         return use_map
-    
+
+if __name__ == '__main__':
+    g = Grid()
+    # g.scale_map()
+    # g.load_map()
     
