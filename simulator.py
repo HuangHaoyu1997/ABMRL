@@ -437,8 +437,7 @@ class env:
         历史地价、周围影响：加性关系
         新地价 = 供需关系缩放因子*（历史地价+周围影响）
         '''
-        115.958678	39.676356
-        115.973395	39.719615
+        
 
 
         x_shuffle = random.sample(list(range(self.map_size[0])),self.map_size[0])
@@ -562,6 +561,6 @@ if __name__ == '__main__':
         print('total time:%.3f,move count:%d\n'%(t2-t1,move_count))
 
         img = Environment.render()
-        plt.imsave('./img/'+str(t)+'.png',img)
+        plt.imsave('./results/'+str(t)+'.png',img)
 
 

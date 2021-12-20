@@ -5,35 +5,40 @@ import matplotlib.pyplot as plt
 
 class Grid:
     def __init__(self, map_size=[500,500]) -> None:
-        self.inf_num = 20 # 基础设施数量
-        self.edu_num = 20 # 学校数量
+        # self.inf_num = 20 # 基础设施数量
+        # self.edu_num = 20 # 学校数量
         self.init_value = 1000 # 初始地价在[0,1000]随机分布
-        self.env_num = 5 # 自然资源[河流，山脉]的数量
+        # self.env_num = 5 # 自然资源[河流，山脉]的数量
         self.work_num = 20 # 企业的数量
-        self.tra_num = 50 # 地铁站位置
+        # self.tra_num = 50 # 地铁站位置
         
-        self.scale = 100 # 对原始地图的缩放系数
-        self.load_map()
+        self.scale = 25 # 对原始地图的缩放系数
         self.scale_map()
         self.init_map()
         
-    
-    def load_map(self):
-        with open('BJ.pkl','rb') as f:
-            self.use_map_up = pickle.load(f)
-        
-        # print(self.use_map.min(),self.use_map.max())
 
     
     def scale_map(self):
-        size = np.round(np.array(self.use_map_up.shape) / self.scale) # 缩小后的尺寸
-        self.use_map = cv2.resize(self.use_map_up,(int(size[0]) ,int(size[1])))
+        # load use_map
+        with open('./data/BJ_use_map_onehot.pkl','rb') as f:
+            self.use_map_onehot = pickle.load(f)
+        
+        # 原尺寸
+        self.origin_width = self.use_map_onehot.shape[0]
+        self.origin_height = self.use_map_onehot.shape[1]
+
+        # 缩小后的尺寸
+        self.scale_width = np.round(self.origin_width / self.scale) 
+        self.scale_height = np.round(self.origin_height / self.scale)
+
+        # resize use_map
+        self.use_map = cv2.resize(self.use_map_onehot,(int(self.scale_height) ,int(self.scale_width)))
         self.use_map = np.array(self.use_map,dtype=np.int)
+        print(self.use_map.shape,self.scale_height,self.scale_width)
         self.use_map -= 1
-        plt.imsave('BJ_scale.png',self.use_map)
+        plt.imsave('./img/BJ_scale_use_map.png',self.use_map)
         self.map_size = self.use_map.shape
         print(self.use_map.min(), self.use_map.max(), type(self.use_map[0,0]))
-
 
 
     def init_map(self):
@@ -93,14 +98,22 @@ class Grid:
     '''
     def init_val_map(self):
         # 初始化地价
+        with open('./data/20年房租index.pkl','rb') as f:
+            price_index = pickle.load(f)
+        
         return np.random.randint(np.ones(self.map_size)*self.init_value).tolist()
     
     def init_tra_map(self):
         # 基础设施周围具有较好的交通等级
         tra_map = np.zeros(self.map_size)
-        xy = np.random.randint(np.ones((self.tra_num,2))*[self.map_size[0]-5,self.map_size[1]-5]) # 取480保证企业不在地图边缘
+        # xy = np.random.randint(np.ones((self.tra_num,2))*[self.map_size[0]-5,self.map_size[1]-5]) # 取480保证企业不在地图边缘
+        with open('./data/railway_station_coord.pkl','rb') as f:
+            xy = pickle.load(f)
+        
         for xxyy in xy:
             x,y = xxyy
+            x = int(self.scale_width * x / self.origin_width)
+            y = int(self.scale_height * y / self.origin_height)
             tra_map[x,y] = 1
         
         '''
@@ -145,9 +158,13 @@ class Grid:
     
     def init_use_map(self):
         # 2:智能体
-        use_map = np.zeros(self.map_size).tolist()
+        # use_map = np.zeros(self.map_size).tolist()
+        use_map = self.use_map.tolist()
         for xy in self.tra_xy:
             x,y = xy
+            x = int(self.scale_width * x / self.origin_width)
+            y = int(self.scale_height * y / self.origin_height)
+
             use_map[x][y] = -100 # 地铁站点不可占用
         for xy in self.work_xy:
             x,y = xy
