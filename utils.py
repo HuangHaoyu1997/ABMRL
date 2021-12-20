@@ -118,6 +118,7 @@ if __name__ == '__main__':
     # get_coords(add_file='address.pkl')
     
     import matplotlib.pyplot as plt
-    plt.imread('BJ_')
+    BJ = plt.imread('BJ_map_crop.jpg')
+    print(BJ.shape)
 
 
