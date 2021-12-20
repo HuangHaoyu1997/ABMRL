@@ -437,6 +437,9 @@ class env:
         历史地价、周围影响：加性关系
         新地价 = 供需关系缩放因子*（历史地价+周围影响）
         '''
+        115.958678	39.676356
+        115.973395	39.719615
+
 
         x_shuffle = random.sample(list(range(self.map_size[0])),self.map_size[0])
         y_shuffle = random.sample(list(range(self.map_size[1])),self.map_size[1])

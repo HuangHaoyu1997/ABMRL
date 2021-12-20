@@ -87,6 +87,26 @@ def get_coords(add_file):
         pickle.dump(coord,f)
 
 
+def cal_distance(A,B):
+    '''
+    给定AB两点经纬度，计算△x和△y
+    假设北京地区为平面，球面距离近似为平面直线距离
+    R = 6378.137km
+    △x = (A点经度-B点经度) * R
+    △y = (A点纬度-B点纬度) * R
+    '''
+    R = 6378.137 # km
+
+    A_longitude, A_latitude = A
+    B_longitude, B_latitude = B
+
+    delta_x = R * (A_longitude - B_longitude)
+    delta_y = R * (A_latitude - B_latitude)
+
+    return [delta_x,delta_y]
+
+    
+
 if __name__ == '__main__':
     # load_map('BJ_map_crop.jpg')
     # g.load_map()
@@ -95,7 +115,9 @@ if __name__ == '__main__':
     
     # load_xls()
 
-    get_coords(add_file='address.pkl')
+    # get_coords(add_file='address.pkl')
     
+    import matplotlib.pyplot as plt
+    plt.imread('BJ_')
 
 
