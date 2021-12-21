@@ -36,7 +36,7 @@ cdef float _neighbor(list xy, list map_size, list val_map, list use_map, dict ag
                     sum += agent_pool[id].income # 收入
                 elif id < 1000: # 1000以下的id代表空地
                     sum += val_map[x+off_x][y+off_y] # 地价
-    
+    print(count)
     return sum/count
 
 def neighbor(xy,map_size,val_map,use_map,agent_pool,offset):

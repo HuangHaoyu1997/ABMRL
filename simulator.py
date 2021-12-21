@@ -138,12 +138,13 @@ def cal_in_pressure(ID, xy, agent_pool, val_map, use_map, map_size, c1, c2):
     
     
     '''
+    # print(type(xy),type(map_size))
     P = neighbor_c.neighbor(xy,
-                    map_size,
-                    val_map,
-                    use_map,
-                    agent_pool,
-                    offset=10) # 邻里平均经济状况
+                            map_size,
+                            val_map,
+                            use_map,
+                            agent_pool,
+                            offset=10) # 邻里平均经济状况
 
     S = c1 * np.abs(income-price) + c2 * np.abs(income-P)
     # print('income,',income,price,P,S)
@@ -177,32 +178,35 @@ def nei_value(xy,use_map,val_map,map_size,offset=10):
 
 class env:
     def __init__(self) -> None:
-        self.map_size = [100,100]
-        self.init_pop = 100 # 初始人口,500
-        self.max_pop = 4000 # 人口上限,6000
-        self.max_income = 5000 # 最高收入
+        self.grid = Grid(scale_factor=100)
+        self.map_size = self.grid.map_size
+        # print(type(self.map_size))
+        self.init_pop = 1000 # 初始人口,500
+        self.max_pop = 50000 # 人口上限,6000
+        self.pop_step = 200 # 单步增加的人口
+        self.max_income = 20000 # 最高收入
         self.r = 0.005 # 收入增速
-        self.R = 0.005 # 地价增速
+        self.R = 0.002 # 地价增速
         self.D = 0.1 # 地价折旧率
         self.c1 = 1e-3 # 内部经济压力权重
         self.c2 = 1e-3 # 内部社会压力权重
         self.ws = 1.0 # 外部压力权重
         self.wg = 1.0 # 内部压力权重
         self.a = 0.5 # 更新地价的权重
-        self.move_step = 2 # 在周围[10,10]范围内计算候选迁居地块,move_step是半边长
+        self.move_step = 5 # 在周围[10,10]范围内计算候选迁居地块,move_step是半边长
 
         self.class_ratio = np.array([0.1,0.2,0.4,0.2,0.1]) # 低,中低,中,中高,高
         # 各个阶层的初始收入上下限，需要实时更新
         # 这些数字是通过将最高收入乘以一定系数得到的
         # 低收入阶层的收入范围是最高收入的[0,0.175],以此类推
-        self.income = np.array([[100,175],   # 低
-                                [175,350],   # 中低
-                                [350,500],   # 中
-                                [500,750],   # 中高
-                                [750,1000]]) # 高
+        self.income = np.array([[1000,1750],   # 低
+                                [1750,3500],   # 中低
+                                [3500,5000],   # 中
+                                [5000,7500],   # 中高
+                                [7500,10000]]) # 高
         self.WT = 0.95 # 迁居阈值
         
-        self.grid = Grid(map_size=self.map_size)
+        
         self.work_income() # 为每个企业分配随机收入增速
         
         self.agent_pool = {}
@@ -246,7 +250,7 @@ class env:
         t4 = time.time()
 
         if len(self.agent_pool) < self.max_pop:
-            self.gen_agent(N=20)
+            self.gen_agent(N=self.pop_step)
         t5 = time.time()
         print('move:%.3f,update income:%.3f,update value:%.3f,generate agent:%.3f'%(t2-t1,t3-t2,t4-t3,t5-t4))
         return move_count
@@ -534,6 +538,7 @@ class env:
             x,y = self.agent_pool[id].coord
             clas = self.agent_pool[id].clas
             # 根据阶层上色
+            print(x,y,new_figure.shape)
             if clas == 'Low':          new_figure[x,y,:] = np.array([0,0,128]) # navy blue
             elif clas == 'MediumLow':  new_figure[x,y,:] = np.array([100,149,237]) #cornflowerblue
             elif clas == 'Medium':     new_figure[x,y,:] = np.array([46,139,87]) # seagreen
@@ -548,11 +553,23 @@ class env:
 
 
 if __name__ == '__main__':
+    np.random.seed(100)
+    random.seed(100)
     T = 100 # 仿真步长
     
     # 初始化模拟器
     Environment = env()
+    use_map = np.array(Environment.grid.use_map)
+    print('总地块%d,非法地块%d,可用空闲%d,基础设施%d,已居住%d'
+        %(use_map.shape[0]*use_map.shape[1],(use_map==-1).sum(),\
+            (use_map==0).sum(),(use_map<-1).sum(),(use_map>999).sum()))
+    
+    agent_index = np.argwhere(use_map==1000)
+    print('ID 1000:',agent_index[0])
+    nei = use_map[179-5:179+5,74-5:79+5]
+    print(use_map.shape,(nei==0).sum())
     # 开始仿真
+    
     for t in range(T):
         t1 = time.time()
         move_count = Environment.step(t)
@@ -563,4 +580,6 @@ if __name__ == '__main__':
         img = Environment.render()
         plt.imsave('./results/'+str(t)+'.png',img)
 
+    
+    
 
