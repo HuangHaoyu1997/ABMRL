@@ -8,16 +8,7 @@ def neighbor(xy,map_size,val_map,use_map,agent_pool,offset=5):
     
     '''
     # print(type(xy),type(map_size),type(val_map),type(use_map),type(agent_pool),type(offset))
-    def is_agent(xy,use_map):
-        '''
-        判断当前地块是空地还是被智能体占据
-        ID > 999是ID号
-        ID = 0是空地
-        '''
-        x,y = xy
-        ID = use_map[x][y]
-        if ID > 999:   return ID
-        elif ID < 999: return 0
+    
 
     x,y = xy
 
@@ -33,7 +24,9 @@ def neighbor(xy,map_size,val_map,use_map,agent_pool,offset=5):
     for off_x, off_y in dir:
         if ((x+off_x) >= 0) and ((x+off_x)<map_size[0]) and ((y+off_y) >= 0) and ((y+off_y)<map_size[1]): # 不越界
             if use_map[x+off_x][y+off_y] >= 0: # 能访问
-                id = is_agent([x+off_x,y+off_y],use_map) # 查找该地块上有没有人居住
+                
+                id = use_map[x+off_x][y+off_y] if use_map[x+off_x][y+off_y]>999 else 0# 查找该地块上有没有人居住
+                
                 if id >= 1000: # 1000以上的id代表agent
                     sum.append(agent_pool[id].income) # 收入
                 elif id < 1000: # 1000以下的id代表空地

@@ -127,24 +127,24 @@ def cal_in_pressure(ID, xy, agent_pool, val_map, use_map, map_size, c1, c2):
     income = agent_pool[ID].income
     price = val_map[x][y] # 所占土地地价
     
-    
-    '''
     P = neighbor(xy,
-                    map_size,
-                    val_map,
-                    use_map,
-                    agent_pool,
-                    offset=10) # 邻里平均经济状况
-    
-    
+                map_size,
+                val_map,
+                use_map,
+                agent_pool,
+                offset=5) # 邻里平均经济状况
     '''
-    # print(type(xy),type(map_size))
+    
     P = neighbor_c.neighbor(xy,
                             map_size,
                             val_map,
                             use_map,
                             agent_pool,
                             offset=10) # 邻里平均经济状况
+    
+    '''
+    
+    
 
     S = c1 * np.abs(income-price) + c2 * np.abs(income-P)
     # print('income,',income,price,P,S)
@@ -181,9 +181,9 @@ class env:
         self.grid = Grid(scale_factor=100)
         self.map_size = self.grid.map_size
         # print(type(self.map_size))
-        self.init_pop = 1000 # 初始人口,500
-        self.max_pop = 50000 # 人口上限,6000
-        self.pop_step = 200 # 单步增加的人口
+        self.init_pop = 200 # 初始人口,500
+        self.max_pop = 10000 # 人口上限,6000
+        self.pop_step = 50 # 单步增加的人口
         self.max_income = 20000 # 最高收入
         self.r = 0.005 # 收入增速
         self.R = 0.002 # 地价增速
@@ -193,7 +193,7 @@ class env:
         self.ws = 1.0 # 外部压力权重
         self.wg = 1.0 # 内部压力权重
         self.a = 0.5 # 更新地价的权重
-        self.move_step = 5 # 在周围[10,10]范围内计算候选迁居地块,move_step是半边长
+        self.move_step = 7 # 在周围[10,10]范围内计算候选迁居地块,move_step是半边长
 
         self.class_ratio = np.array([0.1,0.2,0.4,0.2,0.1]) # 低,中低,中,中高,高
         # 各个阶层的初始收入上下限，需要实时更新
@@ -302,6 +302,13 @@ class env:
                     n_total += 1
                     if self.grid.use_map[x+off_x][y+off_y] >= 1000: # 1000以上的id代表agent
                         n_occupied += 1
+        if n_total == 0:
+            use_map = np.array(self.grid.use_map)
+            print('总地块%d,非法地块%d,可用空闲%d,基础设施%d,已居住%d'
+                %(use_map.shape[0]*use_map.shape[1],(use_map==-1).sum(),\
+                    (use_map==0).sum(),(use_map<-1).sum(),(use_map>999).sum()))
+            print(x,y)
+            print(np.array(self.grid.use_map)[x-5:x+5,y-5:y+5])
         return n_occupied / n_total
 
     def move(self,ID):
@@ -476,7 +483,7 @@ class env:
 
                     t2 = time.time()
                     
-                    neighbor_occupy = self.occupation([x,y],offset=self.move_step) # 计算邻域已被占据的格点数，offset=10
+                    neighbor_occupy = self.occupation([x,y],offset=self.move_step) # 计算[x,y]的邻域已被占据的格点数，offset=10
                     t3 = time.time()
                     if neighbor_occupy >= 0.8 and neighbor_occupy < 1:      factor = 1.10
                     elif neighbor_occupy >= 0.6 and neighbor_occupy < 0.8:  factor = 1.05
@@ -545,9 +552,9 @@ class env:
             elif clas == 'MediumHigh': new_figure[x,y,:] = np.array([255,215,0]) # gold
             elif clas == 'High':       new_figure[x,y,:] = np.array([255,48,48]) # firebrick1
         for x,y in self.grid.work_xy:
-            new_figure[x,y,:] = [255,0,255] # 标注企业位置;magenta
+            new_figure[x,y,:] = [255,0,255] # 标注企业位置;品红色
         for x,y in self.grid.tra_xy:
-            new_figure[x,y,:] = [0,255,255] # 标注地铁站;cyan
+            new_figure[x,y,:] = [0,255,255] # 标注地铁站;青色
         
         return new_figure
 
